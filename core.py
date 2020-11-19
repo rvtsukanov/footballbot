@@ -1,21 +1,26 @@
 import datetime
 import logging
 
+
 class Player:
     def __init__(self, id,
                  username,
-                 name=None,
-                 surname=None,
+                 first_name=None,
+                 last_name=None,
                  agreed=False,
                  is_admin=False,
+                 is_bot=False,
+                 language_code='ru'
                  ):
 
         self.id = id
         self.username = username
-        self.name = name
-        self.surname = surname
+        self.first_name = first_name
+        self.last_name = last_name
         self.agreed = agreed
         self.is_admin = is_admin
+        self.is_bot = is_bot
+        self.language_code = language_code
 
 
     def __hash__(self):
@@ -25,7 +30,52 @@ class Player:
         return self.id == other.id
 
     def __repr__(self):
-        return f'{(self.name is not None) * self.name} {(self.surname is not None) * self.surname} ({self.id}) agree status: {self.agreed}'
+        return f'{(self.username is not None) * self.username} ({self.id}) status:{self.agreed}'
+
+
+class Message:
+    def __init__(self, message_id: int,
+                 message_from: Player,
+                 chat: str,
+                 date: int,
+                 text: str):
+        self.message_id = message_id
+        self.message_from = message_from
+        self.chat = chat
+        self.date = date
+        self.text = text
+
+
+    def __hash__(self):
+        return hash(self.message_id)
+
+
+    def __eq__(self, other):
+        return self.message_id == other.message_id
+
+    @property
+    def hdate(self):
+        return datetime.datetime.fromtimestamp(self.date)
+
+    def __repr__(self):
+        return f'| <{self.message_id}> @{self.message_from} text:{self.text} |'
+
+# b1 = [{'text': 'text1'}, {'text': 'text3'}]
+# b2 = [{'text': 'text2'}]
+# keyboard = [b1, b2]
+#
+
+# kb_markup_remove = {'remove_keyboard': True}
+
+
+class Keyboard:
+    def __init__(self, inline=False, buttons=[], **kwargs):
+        self.kb_markup = {inline * 'keyboard' + (not inline) * 'inline_keyboard': [{'text': text} for text in buttons],
+                     **kwargs}
+
+    def serialize(self):
+        #TODO: implement
+        pass
 
 
 class Location:
