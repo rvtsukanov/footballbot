@@ -60,13 +60,6 @@ class Message:
     def __repr__(self):
         return f'| <{self.message_id}> @{self.message_from} text:{self.text} |'
 
-# b1 = [{'text': 'text1'}, {'text': 'text3'}]
-# b2 = [{'text': 'text2'}]
-# keyboard = [b1, b2]
-#
-
-# kb_markup_remove = {'remove_keyboard': True}
-
 
 class Keyboard:
     def __init__(self, inline=False, buttons=[], **kwargs):
@@ -98,7 +91,10 @@ class PollSession:
         self._create_time = datetime.datetime.now()
         self._is_closed = is_closed
 
-        self.player_set = {}
+        self.player_set = set()
+
+    def __repr__(self):
+        return f'{self.active_time_start}__{self.active_time_end} with {self.player_set} players'
 
     def remove_player_from_session(self, player):
         if player in self.player_set:
