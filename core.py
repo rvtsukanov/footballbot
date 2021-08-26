@@ -1,104 +1,41 @@
 import datetime
 import logging
+import yaml
 
-
-class Player:
-    def __init__(self, id,
-                 username,
-                 first_name=None,
-                 last_name=None,
-                 agreed=False,
-                 is_admin=False,
-                 is_bot=False,
-                 language_code='ru'
-                 ):
-
-        self.id = id
-        self.username = username
-        self.first_name = first_name
-        self.last_name = last_name
-        self.agreed = agreed
-        self.is_admin = is_admin
-        self.is_bot = is_bot
-        self.language_code = language_code
-
-
-    def __hash__(self):
-        return hash(self.id)
-
-    def __eq__(self, other):
-        return self.id == other.id
-
-    def __repr__(self):
-        return f'{(self.username is not None) * self.username} ({self.id}) status:{self.agreed}'
-
-
-class Message:
-    def __init__(self, message_id: int,
-                 message_from: Player,
-                 chat: str,
-                 date: int,
-                 text: str):
-        self.message_id = message_id
-        self.message_from = message_from
-        self.chat = chat
-        self.date = date
-        self.text = text
-
-
-    def __hash__(self):
-        return hash(self.message_id)
-
-
-    def __eq__(self, other):
-        return self.message_id == other.message_id
-
-    @property
-    def hdate(self):
-        return datetime.datetime.fromtimestamp(self.date)
-
-    def __repr__(self):
-        return f'| <{self.message_id}> @{self.message_from} text:{self.text} |'
-
-
-class Keyboard:
-    def __init__(self, inline=False, buttons=[], **kwargs):
-        self.kb_markup = {inline * 'keyboard' + (not inline) * 'inline_keyboard': [{'text': text} for text in buttons],
-                     **kwargs}
-
-    def serialize(self):
-        #TODO: implement
-        pass
-
-
-class Location:
-    def __init__(self, lat, lon, name):
-        pass
-        # 55.718779, 37.551103
-
+NUM_PLAYERS = yaml.safe_load(open('./config.yaml', 'r'))['num_players']
+NUM_EXTRA_PLAYERS = yaml.safe_load(open('./config.yaml', 'r'))['num_extra_players']
 
 
 class PollSession:
     def __init__(self,
-                 active_time_start,
-                 active_time_end,
+                 session_start_time,
+                 session_end_time,
                  is_closed=True,
-                 location=None):
+                 game_date=None):
 
-        self.active_time_start = active_time_start
-        self.active_time_end = active_time_end
+        self.session_start_time = session_start_time
+        self.session_end_time = session_end_time
 
         self._create_time = datetime.datetime.now()
         self._is_closed = is_closed
 
-        self.player_set = set()
+        self.game_date = game_date # mb make a propery?
+
+        self.player_set = {}
+        self.extra_player_set = {}
 
     def __repr__(self):
-        return f'{self.active_time_start}__{self.active_time_end} with {self.player_set} players'
+        return f'{self.session_start_time}__{self.session_end_time} with {list(self.player_set)} players'
 
     def remove_player_from_session(self, player):
         if player in self.player_set:
             logging.info(f'Removing {player} from player-set')
+            self.player_set.pop(player)
+            if len(self.extra_player_set) > 0:
+                self.player_set[list(self.extra_player_set)[0]] = None
+
+        elif player in self.extra_player_set:
+            logging.info(f'Removing {player} from extra player set')
             self.player_set.pop(player)
 
 
@@ -110,9 +47,25 @@ class PollSession:
 
 
     def add_player_to_session(self, player):
-        self.remove_player_from_session(player)
-        logging.info(f'Adding {player} to player-set')
-        self.player_set.add(player)
+        if len(self.player_set) < NUM_PLAYERS:
+            logging.info(f'Adding {player} to main player set')
+            self.player_set[player] = None
+
+        elif (len(self.player_set) >= NUM_PLAYERS) and (len(self.player_set) <= NUM_EXTRA_PLAYERS):
+            logging.info(f'Adding {player} to extra set')
+            self.extra_player_set[player] = None
+
+        else:
+            logging.info(f'Queue is full.')
+
+
+    def render_status(self):
+        return f''' 
+        *Session starts at: {self.session_start_time.date()} for game: {self.game_date}*
+        ''' + ' - '.join(['@' + player for player in list(self.player_set)]) + '\n\n' + ' * '.join(['@' + player for
+                                                                                                    player in list(
+                self.extra_player_set)])
+
 
 
 
