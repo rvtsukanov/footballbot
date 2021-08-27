@@ -3,20 +3,30 @@ import yaml
 import logging
 import sys
 import json
-from core import PollSession
+from core import PollSession, read_parameter
 import datetime
 import psycopg2
+from flask import Flask, request
+import re
 
-TOKEN = yaml.safe_load(open('./config.yaml', 'r'))['token']
-SESSION_ADMINS = yaml.safe_load(open('./config.yaml', 'r'))['admins']
-GROUP_ID = yaml.safe_load(open('./config.yaml', 'r'))['group_chat_id']
+TOKEN = read_parameter('token')
+SESSION_ADMINS = read_parameter('admins')
+GROUP_ID = read_parameter('group_chat_id')
 
-PG_HOST = yaml.safe_load(open('./config.yaml', 'r'))['pg_host']
-PG_PASSWORD = yaml.safe_load(open('./config.yaml', 'r'))['pg_password']
-PG_DB = yaml.safe_load(open('./config.yaml', 'r'))['pg_db']
-PG_USER = yaml.safe_load(open('./config.yaml', 'r'))['pg_user']
+PG_HOST = read_parameter('DATABASE_URL')
 
-MATCHTIME = datetime.time(int(yaml.safe_load(open('./config.yaml', 'r'))['matchtime']), 0, 0, 0)
+print('HOST IS: ', PG_HOST)
+PG_PASSWORD = read_parameter('pg_password')
+PG_DB = read_parameter('pg_db')
+PG_USER = read_parameter('pg_user')
+
+MATCHTIME = datetime.time(int(read_parameter('matchtime')), 0, 0, 0)
+
+server = Flask(__name__)
+
+_, user, db_token, host, port, db = re.findall(r'(\w+)://(\w+):(\w+)@(.+):(\d+)\/(\w+)', PG_HOST)[0]
+
+import os
 
 log = logging.getLogger('server')
 log.setLevel(logging.INFO)
@@ -30,13 +40,12 @@ class Run:
         self.bot = telebot.TeleBot(TOKEN, parse_mode='MARKDOWN')
 
         self.conn = psycopg2.connect(
-            host=PG_HOST,
-            database=PG_DB,
-            user=PG_USER,
-            password=PG_PASSWORD)
+            host=host,
+            database=db,
+            user=user,
+            password=db_token)
 
         self.cursor = self.conn.cursor()
-
 
         @self.bot.message_handler(commands=['start_new_poll'], func=lambda m: m.from_user.username in SESSION_ADMINS)
         def start_new_poll(message):
@@ -54,15 +63,16 @@ class Run:
                                                      is_closed=False)
 
                 self.log.info(f'Creating new PollSession. \n Will active from '
-                              f'{r.current_poll_session.session_start_time} to {r.current_poll_session.session_end_time}')
+                              f'{self.current_poll_session.session_start_time} to'
+                              f' {self.current_poll_session.session_end_time}')
 
-                self.bot.send_message(chat_id=GROUP_ID, text=str(r.current_poll_session))
+                self.bot.send_message(chat_id=GROUP_ID, text=str(self.current_poll_session))
 
 
         @self.bot.message_handler(commands=['check_current_poll'], func=lambda m: m.from_user.username in
                                                                                   SESSION_ADMINS)
         def check_current_poll(message):
-            log.info(r.current_poll_session)
+            log.info(self.current_poll_session)
             self.bot.send_message(chat_id=GROUP_ID,
                                   text=self.current_poll_session.render_status())
 
@@ -71,8 +81,8 @@ class Run:
                                                                                   SESSION_ADMINS)
         def end_current_poll(message):
             if self.current_poll_session:
-                log.info(r.current_poll_session)
-                self.bot.send_message(chat_id=GROUP_ID, text=str(r.current_poll_session) + "is closed.")
+                log.info(self.current_poll_session)
+                self.bot.send_message(chat_id=GROUP_ID, text=str(self.current_poll_session) + "is closed.")
 
 
 
@@ -97,6 +107,20 @@ class Run:
                 if username in self.current_poll_session.player_set:
                     self._add_player_to_db_session(self.current_poll_session, username, out=True, now=now)
 
+        @server.route('/' + TOKEN, methods=['POST'])
+        def getMessage():
+            json_string = request.get_data().decode('utf-8')
+            update = telebot.types.Update.de_json(json_string)
+            self.bot.process_new_updates([update])
+            return "!", 200
+
+        @server.route("/")
+        def webhook():
+            print('Im in webhook')
+            self.bot.remove_webhook()
+            self.bot.set_webhook(url='https://doweplayfootball.herokuapp.com/' + TOKEN)
+            return "!", 200
+
 
     def _find_closest_game_date(self, time, matchday=5):
         return (time + datetime.timedelta((matchday - time.weekday()) % 7)).date()
@@ -118,11 +142,15 @@ class Run:
                              now
                              ))
 
-        self.log.debug(f'commiting')
+        self.log.debug(f'writing {username} to db')
         self.conn.commit()
         self.log.debug(f'committed')
 
 
+if __name__ == "__main__":
+    try:
+        r = Run()
+        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)), debug=False)
 
-r = Run()
-r.bot.polling()
+    except Exception as e:
+        print(e)

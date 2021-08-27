@@ -1,9 +1,16 @@
 import datetime
 import logging
 import yaml
+import os
 
 NUM_PLAYERS = yaml.safe_load(open('./config.yaml', 'r'))['num_players']
 NUM_EXTRA_PLAYERS = yaml.safe_load(open('./config.yaml', 'r'))['num_extra_players']
+
+def read_parameter(param_name):
+    if os.getenv(param_name.upper()):
+        return os.getenv(param_name.upper())
+    else:
+        return yaml.safe_load(open('./config.yaml', 'r'))[param_name]
 
 
 class PollSession:
