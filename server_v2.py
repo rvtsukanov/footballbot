@@ -8,6 +8,8 @@ import psycopg2
 from flask import Flask, request
 import re
 
+from pg_snippets import fetch_last_session_session_index, fetch_players_by_session_id
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--debug')
 
@@ -62,7 +64,7 @@ class Run:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
         self.log = logging.getLogger('run_instance')
         self.log.setLevel(logging.INFO if not debug else logging.DEBUG)
-        self.current_poll_session = None
+
         self.current_poll_session_message = None
 
         self.bot = telebot.TeleBot(TOKEN, parse_mode='MARKDOWN')
@@ -83,13 +85,35 @@ class Run:
             host=host,
             database=db,
             user=user,
-            password=db_token)
+            password=db_token
+        )
 
         self.cursor = self.conn.cursor()
+        self.current_poll_session = self.get_session()
 
-        # self.check_current_status()
         self.register_message_handlers(self.message_handlers)
         self.register_callback_handlers(self.callback_handlers)
+
+
+    def get_session(self):
+        self.log.info(f'Attempt to recover existing session ... ')
+        index = fetch_last_session_session_index(self.conn, now=datetime.datetime.now())
+        if index:
+            session_id, session_start_time, session_expire_time = index[0]
+            players = fetch_players_by_session_id(connector=self.conn, session_id=session_id)
+            self.log.info(f'Players are: {players}')
+
+            pollsession = PollSession(session_start_time=session_start_time,
+                                                    session_end_time=session_expire_time,
+                                                    game_date=session_start_time,
+                                                    is_closed=False)
+
+        else:
+            self.log.info(f'Creating new session')
+
+        self.log.info(f'{index}')
+        return index
+
 
     def register_message_handlers(self, handlers):
         for handler, kwargs in handlers.items():

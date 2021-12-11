@@ -48,7 +48,7 @@ class PollSession:
 
     def remove_player_from_session(self, player):
         if player in self.player_set:
-            logging.info(f'Removing {player} from player-set')
+            logging.info(f'Removing {player} from player-seta')
             if self.player_set[player] > 1:
                 self.player_set[player] -= 1
 
@@ -85,7 +85,6 @@ class PollSession:
 
 
     def render_status(self):
-
 
         emoji_status = u'\U000027a1' if not self.is_full else u'\U0000274c'
         print('FULL?: ', self.is_full)
