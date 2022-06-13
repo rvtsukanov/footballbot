@@ -4,8 +4,15 @@ services:
   bot:
     build: ..
 
-#    command:
-#        ['pytest', '/footballbot/test_session_ft.py']
+    environment:
+        pg_db: 'test_data'
+
+    depends_on:
+      - "db"
+
+    command:
+#        ['python', './server_v2.py', '--', 'pytest', 'tests/test_session_ft.py']
+        ['pytest', 'tests/test_session_ft.py']
 
   db:
     image: "postgres:latest"
