@@ -4,14 +4,21 @@ import yaml
 import os
 from collections import defaultdict
 
-NUM_PLAYERS = yaml.safe_load(open('./config.yaml', 'r'))['num_players']
-NUM_EXTRA_PLAYERS = yaml.safe_load(open('./config.yaml', 'r'))['num_extra_players']
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+logging.info(f'Got root dir as {ROOT_DIR}')
+
+CONFIG_PATH = os.path.join(ROOT_DIR, 'config.yaml')
+logging.info(f'Config then {CONFIG_PATH}')
+
+NUM_PLAYERS = yaml.safe_load(open(CONFIG_PATH, 'r'))['num_players']
+NUM_EXTRA_PLAYERS = yaml.safe_load(open(CONFIG_PATH, 'r'))['num_extra_players']
+
 
 def read_parameter(param_name):
     if os.getenv(param_name.upper()):
         return os.getenv(param_name.upper())
-    elif yaml.safe_load(open('./config.yaml', 'r'))[param_name]:
-        return yaml.safe_load(open('./config.yaml', 'r'))[param_name]
+    elif yaml.safe_load(open(CONFIG_PATH, 'r'))[param_name]:
+        return yaml.safe_load(open(CONFIG_PATH, 'r'))[param_name]
     else:
         return ''
 

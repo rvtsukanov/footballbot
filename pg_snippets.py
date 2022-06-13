@@ -3,11 +3,11 @@ from core import read_parameter
 import datetime
 
 import logging
+import sys
 
 logger = logging.getLogger("pg_snippet")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
-import sys
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
@@ -23,11 +23,6 @@ PG_DB = read_parameter("pg_db")
 PG_USER = read_parameter("pg_user")
 
 MATCHTIME = datetime.time(int(read_parameter("matchtime")), 0, 0, 0)
-
-
-connector = psycopg2.connect(
-    host=PG_HOST, database=PG_DB, user=PG_USER, password=PG_PASSWORD
-)
 
 
 def insert_into_session_index(connector, **values):
@@ -87,9 +82,75 @@ def fetch_players_by_session_id(connector, **values):
     return cursor.fetchall()
 
 
+def insert_one_player_into_sessions2players(connector, **values):
+    cursor = connector.cursor()
+
+    session_id = values['session_id']
+    now = values['now']
+    username = values['username']
+    out = values['out']
+    game_date = values['game_date']
+
+    sql = f"""
+            INSERT INTO sessions2players(game_date, out, username, now, session_id)
+            VALUES ('{game_date}', '{out}', '{username}', '{now}', '{session_id}');
+        """
+
+    logger.debug(f"By following SQL: {sql}")
+    print(f"By following SQL: {sql}")
+
+    cursor.execute(
+        sql,
+    )
+    connector.commit()
+
+
+
 def find_closest_game_date(time, matchday=6):
     return time + datetime.timedelta((matchday - time.weekday()) % 7)
 
+
+
+def create_agg_cumsum_procedures(connector, **values):
+
+    sql = '''
+    CREATE FUNCTION int_add_pos_or_zero(int, int)
+    RETURNS int
+    AS $$
+        BEGIN
+            RETURN greatest($1 + $2, 0);
+        END;
+    $$
+    LANGUAGE plpgsql
+    IMMUTABLE;
+
+    CREATE AGGREGATE add_pos_or_zero(int)(
+      SFUNC = int_add_pos_or_zero,
+      STYPE = int,
+      INITCOND = 0
+      );
+    '''
+
+
+
+# now = datetime.datetime.now()
+# insert_one_player_into_sessions2players_values = [{'game_date': (now + datetime.timedelta(days=5)).date(),
+#                                                   'session_id': 127,
+#                                                   'now': now,
+#                                                   'username': 'gsafyanov',
+#                                                   'out': True},
+#
+#                                                  {'game_date': (now + datetime.timedelta(days=5)).date(),
+#                                                   'session_id': 127,
+#                                                   'now': now,
+#                                                   'username': 'gsafyanov',
+#                                                   'out': False},
+#
+#
+#                                                   ]
+
+# for values in insert_one_player_into_sessions2players_values:
+#     insert_one_player_into_sessions2players(connector, **values)
 
 # now = datetime.datetime.now()
 # days
@@ -114,6 +175,22 @@ def find_closest_game_date(time, matchday=6):
 #     insert_into_session_index(connector, **row)
 
 
-values = {"now": datetime.datetime.now()}
-result = fetch_last_session_session_index(connector, **values)
-print(result)
+# values = {"now": datetime.datetime.now()}
+# result = fetch_last_session_session_index(connector, **values)
+# print(result)
+
+
+# SELECT session_id, username, now
+# FROM(
+# 	SELECT session_id, username, out, now, add_pos_or_zero(t2.delta::int)
+# 	OVER (PARTITION BY session_id, username ORDER BY now ROWS UNBOUNDED PRECEDING) AS cumsum
+# 	FROM (SELECT session_id, username, game_date, now, out,
+# 			   (CASE WHEN out=true THEN -1
+# 					WHEN out=false THEN 1
+# 			   END) AS delta
+# 		  FROM sessions2players) AS t2
+# 	WHERE session_id = 127
+# 	) AS t3
+# ORDER BY session_id, username, now desc;
+
+

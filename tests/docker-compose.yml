@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  bot:
+    build: ..
+
+#    command:
+#        ['pytest', '/footballbot/test_session_ft.py']
+
+  db:
+    image: "postgres:latest"
+    volumes:
+    - /Users/rvtsukanov/doweplayadata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=rvtsukanov
+      - POSTGRES_PASSWORD=doweplayfootball
+      - POSTGRES_DB=postgres
+
+    ports:
+    - 5432:5432

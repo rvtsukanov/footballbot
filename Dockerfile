@@ -1,12 +1,14 @@
 FROM python:3.8
 
-COPY . .
+WORKDIR /footballbot
+COPY . /footballbot
 
 ENV num_players=8
+ENV PYTHONPATH /footballbot
 
 RUN pip install -r requirements.txt
 
-#EXPOSE 5000
+EXPOSE 5432
 
-CMD [ "python", "./server_v2.py" ]
+#CMD [ "python", "./server_v2.py" ]
 
