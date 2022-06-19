@@ -27,16 +27,19 @@ class PollSession:
     def __init__(self,
                  session_start_time,
                  session_end_time,
+                 session_id,
                  is_closed=True,
                  game_date=None):
 
         self.session_start_time = session_start_time
         self.session_end_time = session_end_time
 
+        self.session_id = session_id
+
         self._create_time = datetime.datetime.now()
         self._is_closed = is_closed
 
-        self.game_date = game_date # mb make a propery?
+        self.game_date = game_date
 
         self.player_set = defaultdict(int)
         self.extra_player_set = defaultdict(int)
@@ -47,11 +50,8 @@ class PollSession:
 
     @property
     def is_full(self):
-        print(sum(self.player_set.values()))
-        print(NUM_PLAYERS)
-
-
         return sum(self.player_set.values()) == NUM_PLAYERS
+
 
     def remove_player_from_session(self, player):
         if player in self.player_set:
@@ -81,6 +81,7 @@ class PollSession:
         if sum(self.player_set.values()) < NUM_PLAYERS:
             logging.info(f'Adding {player} to main player set')
             self.player_set[player] += 1
+
 
 
         elif (len(self.player_set) >= NUM_PLAYERS) and (len(self.player_set) <= NUM_EXTRA_PLAYERS):

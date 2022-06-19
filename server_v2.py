@@ -5,12 +5,14 @@ from core import PollSession
 import argparse
 import datetime
 import psycopg2
+from telebot import types
 from flask import Flask
 from markups import plus_minus_markup
-from scenarios import SESSION_ONLY, GROUP_ONLY, ALWAYS_TRUE
-from constants import TOKEN, SESSION_ADMINS, GROUP_ID, PG_HOST, PG_PASSWORD, PG_DB, PG_USER, MATCHTIME, MATCHDAY
+from scenarios import ADMINS_ONLY, GROUP_ONLY, ALWAYS_TRUE, PRIVATE_ONLY, QUERY_DEFAULT
+from constants import TOKEN, SESSION_ADMINS, GROUP_ID, PG_HOST, PG_PASSWORD, PG_DB, PG_USER, MATCHTIME, MATCHDAY, AVAILABLE_COMMANDS_INLINE_QUERY
 
-from pg_snippets import fetch_last_session_session_index, fetch_players_by_session_id
+from pg_snippets import fetch_last_session_session_index, \
+    fetch_players_by_session_id, insert_one_player_into_sessions2players
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug")
@@ -41,18 +43,21 @@ class Run:
         }
 
         self.message_handlers = {
-            self.start_new_poll: {"func": SESSION_ONLY,
+            self.start_new_poll: {"func": ADMINS_ONLY,
                                   "commands": ["start_new_poll"]},
             self.check_current_poll: {
                 "commands": ["check_current_poll"],
-                "func": SESSION_ONLY,
+                "func": (ADMINS_ONLY & GROUP_ONLY) | PRIVATE_ONLY,
             },
             self.end_current_poll: {
                 "commands": ["end_current_poll"],
-                "func": SESSION_ONLY,
+                "func": ADMINS_ONLY,
             },
             self.proceed_group_pluses: {"func": GROUP_ONLY},
         }
+
+        self.inline_handlers = {self.set_max_players: {"func": ALWAYS_TRUE},
+                                self.show_default_commands_inline: {"func": ALWAYS_TRUE}}
 
 
         self.log.info(f'Trying to connect to: {PG_HOST} {PG_DB} {PG_USER} {PG_PASSWORD}')
@@ -65,6 +70,7 @@ class Run:
 
         self.register_message_handlers(self.message_handlers)
         self.register_callback_handlers(self.callback_handlers)
+        self.register_inline_handlers(self.inline_handlers)
 
 
     def adjust_launcher_for_infinity_polling(self):
@@ -73,7 +79,8 @@ class Run:
 
     def get_session(self):
         self.log.info(f"Attempt to recover existing session ... ")
-        index = fetch_last_session_session_index(self.conn, now=datetime.datetime.now())
+        now = datetime.datetime.now()
+        index = fetch_last_session_session_index(self.conn, now=now)
         self.log.info(f"Got index: {index}")
         if index:
             session_id, session_start_time, session_expire_time = index[0]
@@ -87,7 +94,12 @@ class Run:
                 session_end_time=session_expire_time,
                 game_date=session_start_time,
                 is_closed=False,
+                session_id=session_id
             )
+
+            for player in players:
+                pollsession.add_player_to_session(player)
+
             return pollsession
 
 
@@ -102,6 +114,13 @@ class Run:
             self.bot.add_callback_query_handler(
                 self.bot._build_handler_dict(handler, **kwargs)
             )
+
+    def register_inline_handlers(self, handlers):
+        for handler, kwargs in handlers.items():
+            self.bot.add_inline_handler(
+                self.bot._build_handler_dict(handler, **kwargs)
+            )
+
 
     def start_new_poll(self, message):
         now = datetime.datetime.now()
@@ -143,15 +162,42 @@ class Run:
     def check_current_poll(self, message):
         log.info(self.current_poll_session)
         self.bot.send_message(
-            chat_id=GROUP_ID, text=self.current_poll_session.render_status()
+            chat_id=message.chat.id, text=self.current_poll_session.render_status()
         )
 
     def end_current_poll(self, message):
         if self.current_poll_session:
             log.info(self.current_poll_session)
             self.bot.send_message(
-                chat_id=GROUP_ID, text=str(self.current_poll_session) + "is closed."
+                chat_id=GROUP_ID, text=f'{str(self.current_poll_session)} is closed.'
             )
+
+    def change_session(self, message):
+        pass
+
+
+    def show_default_commands_inline(self, query):
+        print('123!!!')
+        try:
+            result_list = []
+            for item in AVAILABLE_COMMANDS_INLINE_QUERY:
+                print('item: ', item)
+                result_list.append(types.InlineQueryResultArticle('1', item, types.InputTextMessageContent(f'{item}')))
+            # r = types.InlineQueryResultArticle('1', 'default', types.InputTextMessageContent('default'))
+            self.bot.answer_inline_query(query.id, [result_list])
+        except Exception as e:
+            print(e)
+
+        # types.InlineQueryResultArticle
+        # self.bot.
+
+
+
+    def set_max_players(self, query):
+        pass
+
+        # AVAILABLE_COMMANDS_INLINE_QUERY
+
 
     def proceed_group_pluses_from_callback(self, query):
 
@@ -162,9 +208,13 @@ class Run:
             username = query.from_user.username
 
             self.current_poll_session.add_player_to_session(username)
+
+            insert_one_player_into_sessions2players(self.conn, )
+
             self._add_player_to_db_session(
                 self.current_poll_session, username, out=False, now=now
             )
+
             self.bot.edit_message_text(
                 text=self.current_poll_session.render_status(),
                 chat_id=GROUP_ID,

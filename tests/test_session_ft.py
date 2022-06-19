@@ -3,6 +3,11 @@ from server_v2 import PollSession, Run
 import psycopg2
 from core import read_parameter
 from pg_snippets import insert_into_session_index, fetch_last_session_session_index, insert_one_player_into_sessions2players
+from db.pg.db_creation_scripts import SESSION_INDEX_CREATE_SCRIPT, SESSION2PLAYERS_CREATE_SCRIPT, GAMES_CREATE_SCRIPT
+
+import faker
+import random
+
 import datetime
 import logging
 
@@ -10,28 +15,14 @@ from constants import PG_HOST, PG_PASSWORD, PG_USER
 PG_DB = 'test_data'
 
 
+@pytest.fixture
 def create_session_index(connector):
     cur = connector.cursor()
-    cur.execute('DROP TABLE IF EXISTS public.session_index')
-
-    # cur.execute('''CREATE SEQUENCE public.session_index_session_id_seq INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647
-    # CACHE 1;''')
-
-    creation_sql = '''CREATE TABLE IF NOT EXISTS public.session_index
-(
-            session_id integer NOT NULL DEFAULT nextval('session_index_session_id_seq'::regclass),
-            session_start_time timestamp without time zone,
-            session_expire_time timestamp without time zone,
-            CONSTRAINT session_index_pkey PRIMARY KEY (session_id)
-)
-            TABLESPACE pg_default;
-
-            ALTER TABLE public.session_index
-                OWNER to admin;
-    '''
-
-    cur.execute(creation_sql)
-    connector.commit()
+    cur.execute(SESSION_INDEX_CREATE_SCRIPT)
+    try:
+        yield connector.commit()
+    except:
+        cur.execute('''TRUNCATE session_index''')
 
 
 def insert_into_session_index_fixture(connector, session_start_time, session_expire_time):
@@ -41,56 +32,68 @@ def insert_into_session_index_fixture(connector, session_start_time, session_exp
 
 def create_games(connector):
     cur = connector.cursor()
-    cur.execute('DROP TABLE IF EXISTS public.games')
-    sql = '''
-    CREATE TABLE IF NOT EXISTS public.games
-    (
-        game_date date NOT NULL,
-        cost numeric,
-        team_a boolean,
-        team_b boolean,
-        team_c boolean,
-        team_d boolean,
-        username "char"[]
-    )
-    
-    TABLESPACE pg_default;
-    
-    ALTER TABLE public.games
-        OWNER to rvtsukanov;
-        '''
-    cur = connector.cursor()
-    cur.execute(sql)
+    cur.execute(GAMES_CREATE_SCRIPT)
     connector.commit()
 
 
 def create_sessions2players(connector):
     cur = connector.cursor()
-    sql = '''
-            CREATE TABLE IF NOT EXISTS public.sessions2players
-        (
-            game_date date NOT NULL,
-            "out" boolean,
-            username text COLLATE pg_catalog."default",
-            now timestamp without time zone,
-            session_id integer
-        )
-        
-        TABLESPACE pg_default;
-        
-        ALTER TABLE public.sessions2players
-            OWNER to rvtsukanov;
-    '''
-
-    cur.execute(sql)
+    cur.execute(SESSION2PLAYERS_CREATE_SCRIPT)
     connector.commit()
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def connector():
-    return psycopg2.connect(
+    logging.info(f'Trying to connect to: {PG_HOST} {PG_DB} {PG_USER} {PG_PASSWORD}')
+    connector = psycopg2.connect(
         host=PG_HOST, database=PG_DB, user=PG_USER, password=PG_PASSWORD
     )
+    with connector.cursor() as cur:
+        cur.execute('TRUNCATE session_index;')
+    yield connector
+    with connector.cursor() as cur:
+        cur.execute('TRUNCATE session_index;')
+        cur.execute('TRUNCATE sessions2players;')
+        cur.execute('TRUNCATE games;')
+
+    connector.commit()
+    connector.close()
+
+
+def get_session_id(connector, offset_pair):
+    cur = connector.cursor()
+    cur.execute('TRUNCATE session_index;')
+    now = datetime.datetime.now()
+    session_id = insert_into_session_index(connector, session_start_time=(now + datetime.timedelta(days=offset_pair[0])),
+                              session_expire_time=(now + datetime.timedelta(days=offset_pair[1])))
+
+
+    return session_id
+
+
+@pytest.fixture(scope='session')
+def fake():
+    return faker.Faker(locale=['ru_RU'])
+
+
+
+def fulfill_table_sessions2players(connector, fake, offset_pair):#, get_session_id):
+    cur = connector.cursor()
+
+    cur.execute('TRUNCATE sessions2players;')
+    connector.commit()
+
+    session_id = get_session_id(connector, offset_pair)
+
+    # cur.execute('select last_value from session_index_session_id_seq;')
+
+    randint = random.randint(0, 10)
+
+    for _ in range(randint):
+        insert_one_player_into_sessions2players(connector, session_id=session_id,
+                                                now=datetime.datetime.now(), username=fake.user_name(), out=False,
+                                                game_date=datetime.date(9999, 12, 12)
+                                                )
 
 
 def test_connection(connector):
@@ -99,53 +102,21 @@ def test_connection(connector):
     assert cur.fetchall()[0][0] == 1
 
 
-@pytest.fixture()
-def database(dsn):
-    pass
-
-
-@pytest.fixture()
-def fake_data(connector):
-    connector
-
-
-
-test_cases = [((-5, 5),True), ((-10, -5), False), ((5, 10) ,False)]
-
+test_cases = [((-5, 5), True), ((-10, -5), False), ((5, 10), False)]
 @pytest.mark.parametrize("offset_pair, expected", test_cases)
-def test_session_index(connector, offset_pair, expected):
-    create_session_index(connector)
-    cur = connector.cursor()
-    # cur.execute('SELECT 1 FROM session_index;')
+def test_session_index(connector, offset_pair, expected, fake):
 
-    now = datetime.datetime.now()
-
-    insert_into_session_index(connector, session_start_time=(now + datetime.timedelta(days=-offset_pair[0])),
-                              session_expire_time=(now + datetime.timedelta(days=offset_pair[1])))
-
+    fulfill_table_sessions2players(connector, fake, offset_pair)
     run = Run(debug=True)
     logging.info(run.current_poll_session)
-
     now = datetime.datetime.now()
-
     index = fetch_last_session_session_index(connector, now=now)
-
-    if index:
-        session_id, session_start_time, session_expire_time = index[0]
-
-        insert_one_player_into_sessions2players(connector, session_id=session_id,
-                                                now=now, username='rvtsukanov', out=False,
-                                                game_date=datetime.date(2022, 11, 11)
-                                                )
-
-        insert_one_player_into_sessions2players(connector, session_id=session_id,
-                                                now=now, username='gsafyanov', out=False,
-                                                game_date=datetime.date(2022, 11, 11)
-                                                )
-
-    # assert False
+    logging.info(f'Index is {index}')
 
     assert (run.current_poll_session is not None) == expected
 
 
+def test_polling():
+    run = Run(debug=True)
+    run.bot.infinity_polling()
 

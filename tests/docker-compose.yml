@@ -10,9 +10,12 @@ services:
     depends_on:
       - "db"
 
-    command:
-#        ['python', './server_v2.py', '--', 'pytest', 'tests/test_session_ft.py']
-        ['pytest', 'tests/test_session_ft.py']
+#    stdin_open: true
+#    tty: true
+#      ['/bin/bash']
+    command: ['tail', '-f', '/dev/null']
+#        ['python', './server_v2.py']
+#        ['pytest', 'tests/test_session_ft.py']
 
   db:
     image: "postgres:latest"

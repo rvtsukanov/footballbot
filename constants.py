@@ -17,6 +17,12 @@ MATCHTIME = datetime.time(int(read_parameter("matchtime")), 0, 0, 0)
 MATCHDAY = 5  # for Sat
 
 
+AVAILABLE_COMMANDS_INLINE_QUERY = ['set_max_players',
+                                   'set_teams_num',
+                                   'add_to_current_session',
+                                   'remove_from_current_session']
+
+
 # if PG_HOST:
 #     _, user, db_token, host, port, db = re.findall(
 #         r"(\w+)://(\w+):(\w+)@(.+):(\d+)\/(\w+)", PG_HOST

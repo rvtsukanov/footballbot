@@ -37,13 +37,15 @@ def insert_into_session_index(connector, **values):
     sql = f"""
         INSERT INTO session_index(
         session_start_time, session_expire_time)
-        VALUES ('{session_start_time}', '{session_expire_time}');
+        VALUES ('{session_start_time}', '{session_expire_time}') 
+        RETURNING session_id;
     """
 
     logger.debug(f"By following SQL: {sql}")
 
     cursor.execute(sql, (session_start_time, session_expire_time))
-    connector.commit()
+    # connector.commit()
+    return cursor.fetchall()[0][0]
 
 
 def fetch_last_session_session_index(connector, **values):
@@ -64,7 +66,6 @@ def fetch_last_session_session_index(connector, **values):
     return cursor.fetchall()
 
 
-
 def fetch_players_by_session_id(connector, **values):
     cursor = connector.cursor()
     session_id = values['session_id']
@@ -79,7 +80,8 @@ def fetch_players_by_session_id(connector, **values):
         sql,
     )
     connector.commit()
-    return cursor.fetchall()
+    players_set = cursor.fetchall()
+    return [player[0] for player in players_set]
 
 
 def insert_one_player_into_sessions2players(connector, **values):
@@ -130,67 +132,5 @@ def create_agg_cumsum_procedures(connector, **values):
       INITCOND = 0
       );
     '''
-
-
-
-# now = datetime.datetime.now()
-# insert_one_player_into_sessions2players_values = [{'game_date': (now + datetime.timedelta(days=5)).date(),
-#                                                   'session_id': 127,
-#                                                   'now': now,
-#                                                   'username': 'gsafyanov',
-#                                                   'out': True},
-#
-#                                                  {'game_date': (now + datetime.timedelta(days=5)).date(),
-#                                                   'session_id': 127,
-#                                                   'now': now,
-#                                                   'username': 'gsafyanov',
-#                                                   'out': False},
-#
-#
-#                                                   ]
-
-# for values in insert_one_player_into_sessions2players_values:
-#     insert_one_player_into_sessions2players(connector, **values)
-
-# now = datetime.datetime.now()
-# days
-# print(now)
-# print(now + datetime.timedelta(days=3))
-
-
-# insert_into_session_index_values = [
-#     # First row
-#     {
-#         "session_start_time": datetime.datetime.now(),
-#         "session_expire_time": find_closest_game_date(now),
-#     },
-#     # Second row
-#     {
-#         "session_start_time": now,
-#         "session_expire_time": now + datetime.timedelta(days=3),
-#     },
-# ]
-#
-# for row in insert_into_session_index_values:
-#     insert_into_session_index(connector, **row)
-
-
-# values = {"now": datetime.datetime.now()}
-# result = fetch_last_session_session_index(connector, **values)
-# print(result)
-
-
-# SELECT session_id, username, now
-# FROM(
-# 	SELECT session_id, username, out, now, add_pos_or_zero(t2.delta::int)
-# 	OVER (PARTITION BY session_id, username ORDER BY now ROWS UNBOUNDED PRECEDING) AS cumsum
-# 	FROM (SELECT session_id, username, game_date, now, out,
-# 			   (CASE WHEN out=true THEN -1
-# 					WHEN out=false THEN 1
-# 			   END) AS delta
-# 		  FROM sessions2players) AS t2
-# 	WHERE session_id = 127
-# 	) AS t3
-# ORDER BY session_id, username, now desc;
 
 
