@@ -1,10 +1,12 @@
 from core import read_parameter
+import re
 
 
 class MessageScenario:
     """
     Class, overloading conditions as operators for message handlers only
     """
+
     def __init__(self, function):
         self.function = function
 
@@ -24,5 +26,7 @@ GROUP_ONLY = MessageScenario(lambda m: m.chat.type == "group")
 PRIVATE_ONLY = MessageScenario(lambda m: m.chat.type == "private")
 ALWAYS_TRUE = MessageScenario(lambda m: True)
 
-QUERY_EXISTS = MessageScenario(lambda q: len(q.query) > 0)
+QUERY_EXISTS = MessageScenario(lambda query: len(query.query) > 0)
 QUERY_DEFAULT = MessageScenario(lambda q: len(q.query) > 0)
+
+ADD_TO_CURRENT_SESSION_MATCH = MessageScenario(lambda query: re.findall(r'add_to_current_session (\w+)', query.query))

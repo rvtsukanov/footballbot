@@ -3,6 +3,7 @@ import logging
 import yaml
 import os
 from collections import defaultdict
+import queue
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 logging.info(f'Got root dir as {ROOT_DIR}')
@@ -23,16 +24,34 @@ def read_parameter(param_name):
         return ''
 
 
+class Game:
+    def __init__(self, date):
+        self.date = date
+
+
+class Player:
+    def __init__(self, username, priority=1):
+        self.username = username
+        self.priority = priority
+        self.creation_timestamp = datetime.datetime.now()
+
+
 class PollSession:
     def __init__(self,
                  session_start_time,
                  session_end_time,
                  session_id,
+                 conn,
                  is_closed=True,
-                 game_date=None):
+                 game_date=None,
+                 teams_number=2,
+                 players_per_team=9,
+                 extra_players_per_team=1):
 
         self.session_start_time = session_start_time
         self.session_end_time = session_end_time
+
+        self.conn = conn
 
         self.session_id = session_id
 
@@ -41,8 +60,12 @@ class PollSession:
 
         self.game_date = game_date
 
-        self.player_set = defaultdict(int)
-        self.extra_player_set = defaultdict(int)
+        self.teams_number = teams_number
+        self.players_per_team = players_per_team
+
+        self.player_set = queue.PriorityQueue(pmaxsize=players_per_team)
+        self.extra_player_set = queue.PriorityQueue(maxsize=extra_players_per_team)
+
 
     def __repr__(self):
         return f'{self.session_start_time}__{self.session_end_time} with {list(self.player_set)} players'
@@ -51,7 +74,6 @@ class PollSession:
     @property
     def is_full(self):
         return sum(self.player_set.values()) == NUM_PLAYERS
-
 
     def remove_player_from_session(self, player):
         if player in self.player_set:
@@ -69,7 +91,6 @@ class PollSession:
             logging.info(f'Removing {player} from extra player set')
             self.player_set.pop(player)
 
-
     def close_pollsession(self):
         self._is_closed = True
 
@@ -77,19 +98,36 @@ class PollSession:
         self._is_closed = False
 
 
+    def _add_player_to_session_db(self, player, extra=False):
+        pass
+
+
     def add_player_to_session(self, player):
-        if sum(self.player_set.values()) < NUM_PLAYERS:
-            logging.info(f'Adding {player} to main player set')
-            self.player_set[player] += 1
+
+        try:
+            self.player_set.put(player)
+            self._add_player_to_session_db(player)
+
+        except queue.Full:
+            logging.error('Main player-set is full. Trying to use extra-one')
+            try:
+                self.extra_player_set.put(player)
+                self._add_player_to_session_db(player, extra=True)
+
+            except queue.Full:
+                logging.error('Extra player-set is full. Addition is incomplete')
 
 
-
-        elif (len(self.player_set) >= NUM_PLAYERS) and (len(self.player_set) <= NUM_EXTRA_PLAYERS):
-            logging.info(f'Adding {player} to extra set')
-            self.extra_player_set[player] += 1
-
-        else:
-            logging.info(f'Queue is full.')
+        # if sum(self.player_set.values()) < NUM_PLAYERS:
+        #     logging.info(f'Adding {player} to main player set')
+        #     self.player_set[player] += 1
+        #
+        # elif (len(self.player_set) >= NUM_PLAYERS) and (len(self.player_set) <= NUM_EXTRA_PLAYERS):
+        #     logging.info(f'Adding {player} to extra set')
+        #     self.extra_player_set[player] += 1
+        #
+        # else:
+        #     logging.info(f'Queue is full.')
 
 
     def render_status(self):
@@ -112,12 +150,4 @@ class PollSession:
         print('SOME USEFUL: ' + '\n'.join(rows))
 
         return '\n'.join(rows)
-
-
-
-
-
-
-
-
 

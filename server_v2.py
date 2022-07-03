@@ -6,9 +6,10 @@ import argparse
 import datetime
 import psycopg2
 from telebot import types
+import re
 from flask import Flask
 from markups import plus_minus_markup
-from scenarios import ADMINS_ONLY, GROUP_ONLY, ALWAYS_TRUE, PRIVATE_ONLY, QUERY_DEFAULT
+from scenarios import ADMINS_ONLY, GROUP_ONLY, ALWAYS_TRUE, PRIVATE_ONLY, QUERY_DEFAULT, QUERY_EXISTS, ADD_TO_CURRENT_SESSION_MATCH
 from constants import TOKEN, SESSION_ADMINS, GROUP_ID, PG_HOST, PG_PASSWORD, PG_DB, PG_USER, MATCHTIME, MATCHDAY, AVAILABLE_COMMANDS_INLINE_QUERY
 
 from pg_snippets import fetch_last_session_session_index, \
@@ -20,7 +21,7 @@ parser.add_argument("--debug")
 server = Flask(__name__)
 
 log = logging.getLogger("server")
-log.setLevel(logging.INFO)
+log.setLevel(logging.DEBUG)
 
 
 class Run:
@@ -29,11 +30,14 @@ class Run:
         self.debug = debug
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
         self.log = logging.getLogger("run_instance")
-        self.log.setLevel(logging.INFO if not debug else logging.DEBUG)
+        telebot.logger.setLevel(logging.INFO if not debug else logging.DEBUG)
 
         self.current_poll_session_message = None
 
         self.bot = telebot.TeleBot(TOKEN, parse_mode="MARKDOWN")
+        if debug:
+            pass
+            # telebot.logger.setLevel(logging.DEBUG)
 
         if debug:
             self.adjust_launcher_for_infinity_polling()
@@ -56,8 +60,9 @@ class Run:
             self.proceed_group_pluses: {"func": GROUP_ONLY},
         }
 
-        self.inline_handlers = {self.set_max_players: {"func": ALWAYS_TRUE},
-                                self.show_default_commands_inline: {"func": ALWAYS_TRUE}}
+        # self.inline_handlers = {self.show_default_commands_inline: {"func": QUERY_EXISTS}} # 2 or mode do not work (???)
+        self.inline_handlers = {self.add_to_current_session: {"func": ADD_TO_CURRENT_SESSION_MATCH}} # 2 or mode do not work (???)
+
 
 
         self.log.info(f'Trying to connect to: {PG_HOST} {PG_DB} {PG_USER} {PG_PASSWORD}')
@@ -71,6 +76,8 @@ class Run:
         self.register_message_handlers(self.message_handlers)
         self.register_callback_handlers(self.callback_handlers)
         self.register_inline_handlers(self.inline_handlers)
+
+        self.log.info(f'Trying to connect to: {PG_HOST} {PG_DB} {PG_USER} {PG_PASSWORD}')
 
 
     def adjust_launcher_for_infinity_polling(self):
@@ -94,7 +101,8 @@ class Run:
                 session_end_time=session_expire_time,
                 game_date=session_start_time,
                 is_closed=False,
-                session_id=session_id
+                session_id=session_id,
+                conn=self.conn
             )
 
             for player in players:
@@ -117,6 +125,7 @@ class Run:
 
     def register_inline_handlers(self, handlers):
         for handler, kwargs in handlers.items():
+            print(f'Registring handler: {handler} with kw: {kwargs}')
             self.bot.add_inline_handler(
                 self.bot._build_handler_dict(handler, **kwargs)
             )
@@ -177,19 +186,37 @@ class Run:
 
 
     def show_default_commands_inline(self, query):
-        print('123!!!')
+
+        # r = types.InlineQueryResultArticle('1', 'Result1', types.InputTextMessageContent('hi'))
+        # r2 = types.InlineQueryResultArticle('3', 'Result2', types.InputTextMessageContent('hi'))
+        # self.bot.answer_inline_query(query.id, [r, r2])
+        # print('!!!!123')
         try:
             result_list = []
-            for item in AVAILABLE_COMMANDS_INLINE_QUERY:
-                print('item: ', item)
-                result_list.append(types.InlineQueryResultArticle('1', item, types.InputTextMessageContent(f'{item}')))
+            for n, command in enumerate(AVAILABLE_COMMANDS_INLINE_QUERY):
+                # print('item: ', item)
+                r = types.InlineQueryResultArticle(str(n + 1), command, description=AVAILABLE_COMMANDS_INLINE_QUERY[command],
+                                                   input_message_content=types.InputTextMessageContent(f'@doweplayfootball_bot'), thumb_width=0, thumb_height=0)
+                result_list.append(r)
             # r = types.InlineQueryResultArticle('1', 'default', types.InputTextMessageContent('default'))
-            self.bot.answer_inline_query(query.id, [result_list])
+            print(result_list)
+            status = self.bot.answer_inline_query(query.id, result_list)
+            print(f'STATUS: {status}')
         except Exception as e:
             print(e)
 
         # types.InlineQueryResultArticle
         # self.bot.
+
+    def add_to_current_session(self, query):
+        if self.current_poll_session is None:
+            self.bot.send_message(chat_id=GROUP_ID, text='Session is not initialized. You can create a new one by calling *\start_new_session* command')
+
+        else:
+            user = re.findall('add_to_current_session (\w+)', query.query)
+            if user:
+                self.current_poll_session.add_player_to_session(user)
+
 
 
 

@@ -17,10 +17,10 @@ MATCHTIME = datetime.time(int(read_parameter("matchtime")), 0, 0, 0)
 MATCHDAY = 5  # for Sat
 
 
-AVAILABLE_COMMANDS_INLINE_QUERY = ['set_max_players',
-                                   'set_teams_num',
-                                   'add_to_current_session',
-                                   'remove_from_current_session']
+AVAILABLE_COMMANDS_INLINE_QUERY = {'set_max_players': 'Максимальное число игроков в сессии',
+                                   'set_teams_num': 'Число команд в одной игре',
+                                   'add_to_current_session': 'Добавить игрока к текущей сессии',
+                                   'remove_from_current_session': 'Удалить игрока из текущей сессии'}
 
 
 # if PG_HOST:
