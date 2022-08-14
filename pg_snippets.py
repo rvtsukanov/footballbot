@@ -108,11 +108,6 @@ def insert_one_player_into_sessions2players(connector, **values):
 
 
 
-def find_closest_game_date(time, matchday=6):
-    return time + datetime.timedelta((matchday - time.weekday()) % 7)
-
-
-
 def create_agg_cumsum_procedures(connector, **values):
 
     sql = '''

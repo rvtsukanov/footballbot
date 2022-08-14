@@ -4,24 +4,25 @@ import yaml
 import os
 from collections import defaultdict
 import queue
-
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-logging.info(f'Got root dir as {ROOT_DIR}')
-
-CONFIG_PATH = os.path.join(ROOT_DIR, 'config.yaml')
-logging.info(f'Config then {CONFIG_PATH}')
-
-NUM_PLAYERS = yaml.safe_load(open(CONFIG_PATH, 'r'))['num_players']
-NUM_EXTRA_PLAYERS = yaml.safe_load(open(CONFIG_PATH, 'r'))['num_extra_players']
+import constants
 
 
-def read_parameter(param_name):
-    if os.getenv(param_name.upper()):
-        return os.getenv(param_name.upper())
-    elif yaml.safe_load(open(CONFIG_PATH, 'r'))[param_name]:
-        return yaml.safe_load(open(CONFIG_PATH, 'r'))[param_name]
+def find_closest_game_date(time,
+                           matchday=constants.MATCHDAY,
+                           matchtime=constants.MATCHTIME,
+                           hours_offset: int = 2
+                           ):
+    if time.weekday() == matchday:
+        if time.time() < matchtime:
+            return datetime.datetime.combine(time.date(), matchtime) + datetime.timedelta(hours=hours_offset)
+        else:
+            return datetime.datetime.combine((time + datetime.timedelta(days=7)).date(), matchtime) + datetime.timedelta(hours=hours_offset)
+
     else:
-        return ''
+        new_time = datetime.datetime.combine((time + datetime.timedelta(days=(matchday - time.weekday()) % 7)).date(),
+                                  time=matchtime) + datetime.timedelta(hours=hours_offset)
+
+        return new_time
 
 
 class Game:
@@ -73,7 +74,7 @@ class PollSession:
 
     @property
     def is_full(self):
-        return sum(self.player_set.values()) == NUM_PLAYERS
+        return sum(self.player_set.values()) == constants.NUM_PLAYERS
 
     def remove_player_from_session(self, player):
         if player in self.player_set:
