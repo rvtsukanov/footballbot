@@ -1,0 +1,16 @@
+token:
+  '1462545698:AAE0QAlePEJjM2Wod8IQOCeIdpD93LfXImU'
+
+admins: ['rvtsukanov']
+group_chat_id: '-539481325'
+
+DATABASE_URL: 'db'
+PG_HOST: 'db'
+pg_user: 'rvtsukanov'
+pg_db: 'test_data' ## env doesnot work!
+pg_password: 'doweplayfootball'
+
+matchtime: '10'
+
+num_players: 3
+num_extra_players: 1
