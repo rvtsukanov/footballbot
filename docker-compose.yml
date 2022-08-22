@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  flask:
+    build: .
+
+    environment:
+        pg_db: 'test_data'
+        FLASK_APP: 'routers.py'
+
+    depends_on:
+      - "db"
+
+    ports:
+    - 5002:80
+
+
+
+  db:
+    image: "postgres:latest"
+    volumes:
+    - /Users/rvtsukanov/doweplayadata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=rvtsukanov
+      - POSTGRES_PASSWORD=doweplayfootball
+      - POSTGRES_DB=postgres
+
+    ports:
+    - 5432:5432

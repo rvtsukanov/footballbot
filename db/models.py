@@ -4,8 +4,10 @@ from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
-from sqlalchemy.orm import declarative_base
+# from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
+
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy import desc
 import datetime
@@ -65,8 +67,10 @@ class PollSessionIndex(Base):
     def fetch_active_session(cls, session, now):
         try:
             result = session.query(cls).filter((cls.session_start_time <= now) & (cls.session_end_time >= now)).first()
+            print(f'RES: {result}')
             return result
-        except:
+        except Exception as e:
+            print(e)
             pass
 
 
@@ -85,13 +89,13 @@ class PollSessionIndex(Base):
         session.commit()
 
 
-    def get_current_list_of_players(self, session):
+    @classmethod
+    def get_current_list_of_players(cls, session):
         now = datetime.datetime.now()
         active_session = PollSessionIndex.fetch_active_session(session, now=now)
-        print(active_session.username[0].insert_time)
 
-        return active_session.username
-        # return [active_session.username]
+        # return active_session.username
+        return [item.username for item in active_session.username]
 
 
     def remove_player(self, session, username):
@@ -168,6 +172,6 @@ class Player(Base):
 
 
 
-engine = create_engine(f"postgresql://{PG_USER}:{PG_PASSWORD}@{PG_HOST}/test_data", echo=True, future=True)
+engine = create_engine(f"postgresql://{PG_USER}:{PG_PASSWORD}@{PG_HOST}/test_data", echo=True)
 
 
