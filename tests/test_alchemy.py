@@ -16,7 +16,7 @@ from core import find_closest_game_date
 import datetime
 PG_DB = 'test_data'
 
-from db.models import PollSessionIndex, Session2Player, GameIndex
+from db.models import PollSessionIndex, Session2Player, GameIndex, User, Transactions
 
 
 # set function in order to re-create all test-cases data
@@ -111,6 +111,61 @@ def insert_sessions2players_data(session, fake, players_sessions_num):
     return mapping
 
 
+
+def insert_session_with_players(session, fake):
+    pollsession = PollSessionIndex(session_start_time=datetime.datetime.now() - datetime.timedelta(7),
+                     session_end_time=datetime.datetime.now() + datetime.timedelta(7),
+                     game_id=random.randint(1, 3),
+                     teams_number=random.randint(2, 3),
+                     max_players_per_team=104,
+                     pinned_message_id=random.randint(1, int(1e6))
+                     )
+
+    pollsession.users = [User(username=f'galya_{i}') for i in range(100)]
+
+    session.add_all([pollsession])
+    session.commit()
+
+
+
+def insert_user_data(session, fake, n=5):
+    for _ in range(n):
+        name = fake.user_name()
+        # print('name is ', name)
+        session.add_all([User(username=name)])
+    session.commit()
+
+
+def test_user_table(session, fake):
+    insert_user_data(session, fake)
+    assert len(session.query(User).all()) == 5
+
+
+def test_mapper(session, fake):
+    insert_session_with_players(session, fake)
+    active_session = PollSessionIndex.fetch_active_session(session, datetime.datetime.now())
+
+    print(active_session.users)
+
+
+def test_transactions(session, fake):
+    our_user = User(username=f'petya')
+    extra_user = User(username='vasya')
+
+    trans1 = Transactions(user=our_user, description='Зачисление на баланс', amount=1200)
+    trans2 = Transactions(user=our_user, description='Игра (10/09/22)', amount=-650)
+    trans3 = Transactions(user=our_user, description='Штраф', amount=-100)
+
+    trans4 = Transactions(user=extra_user, description='Штраф', amount=-500)
+
+    # print('RESULT: ', sum([trans1, trans2, trans3]))
+
+    session.add_all([trans1, trans2, trans3, trans4])
+    session.commit()
+
+    assert our_user.get_balance(session) == 450
+
+
 # each players_sessions_num is a number of players in a corresponding session_id (by its index)
 @pytest.mark.parametrize('players_sessions_num, add_n_active, is_random_session_id',
                          [([5, 5, 3, 0, 1], 1, True),
@@ -155,29 +210,23 @@ def test_modify_session(session, fake):
 
 def test_add_players(session, fake):
     insert_session_index_data(session, fake, players_sessions_num=[3] * 5, add_n_active=1)
-    insert_sessions2players_data(session, fake, [3] * 5)
 
-    active_session = PollSessionIndex.fetch_last_active_session_id(session,
-                                                                   datetime.datetime.now())
-    active_session.add_player(session, 'pupkin')
+    active_session = PollSessionIndex.fetch_active_session(session, datetime.datetime.now())
+    active_session.add_player(session, User(username='pupkin'))
 
     assert 'pupkin' in PollSessionIndex.fetch_all_users_by_session_id(session, active_session.session_id)
 
 
 
 def test_remove_players(session, fake):
-
     insert_session_index_data(session, fake, players_sessions_num=[3] * 5, add_n_active=1)
-    insert_sessions2players_data(session, fake, [3] * 5)
-
+    # insert_sessions2players_data(session, fake, [3] * 5)
     pollsession = PollSessionIndex.fetch_exact_pollsession(session, 1)
-
-    pollsession.add_player(session, 'pupkin')
+    pollsession.add_player(session, User(username='pupkin'))
+    pollsession.add_player(session, User(username='pupkin'))
 
     assert 'pupkin' in PollSessionIndex.fetch_all_users_by_session_id(session, pollsession.session_id)
-
-    pollsession.remove_player(session, 'pupkin')
-
+    pollsession.remove_player(session, user=User(username='pupkin'))
     assert 'pupkin' not in PollSessionIndex.fetch_all_users_by_session_id(session, pollsession.session_id)
 
 
@@ -185,10 +234,42 @@ def test_remove_players(session, fake):
 def test_sorting_order(session, fake):
     insert_session_index_data(session, fake, players_sessions_num=[3] * 5, add_n_active=1)
     insert_sessions2players_data(session, fake, [3] * 5)
+    active_session = PollSessionIndex.fetch_active_session(session, datetime.datetime.now())
+    print(active_session.get_current_list_of_players(session))
+
+
+
+def test_max_restrictions(session, fake):
+    insert_session_index_data(session, fake, players_sessions_num=[3] * 5, add_n_active=1)
+    active_session = PollSessionIndex.fetch_active_session(session, datetime.datetime.now())
+
+    max_players_per_team = active_session.max_players_per_team
+
+    for _ in range(max_players_per_team + 5):
+        active_session.add_player(session, fake.user_name())
+
+    assert max_players_per_team == len(active_session.username)
+
+
+def test_zero_level(session, fake):
+
+    insert_session_index_data(session, fake, players_sessions_num=[3] * 5, add_n_active=1)
+    insert_sessions2players_data(session, fake, [3] * 5)
 
     active_session = PollSessionIndex.fetch_active_session(session, datetime.datetime.now())
 
-    print(active_session.get_current_list_of_players(session))
+    assert len(active_session.username) > 0
+
+    for user in active_session.get_current_list_of_players(session):
+        active_session.remove_player(session, user)
+
+    active_session.remove_player(session, user)
+
+    assert len(active_session.username) == 0
+
+
+
+
 
 
 

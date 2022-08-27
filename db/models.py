@@ -30,13 +30,66 @@ class Session2Player(Base):
     row_id = Column(Integer, autoincrement=True, primary_key=True)  # do not like but ...
 
     game_id = Column(Integer, ForeignKey('game_index_orm.game_id'))
-    session = relationship('PollSessionIndex')
+    # session = relationship('PollSessionIndex')
     session_id = Column(Integer, ForeignKey('session_index_orm_wide.session_id'))
-    username = Column(String)
-    insert_time = Column(DateTime, )
+    # username = Column(String) #  User() object TODO!
+    user_id = Column(Integer, ForeignKey('users.user_id'))
+    insert_time = Column(DateTime)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.session_id}:{self.username})'
+        return f'Pollsession_association({self.session_id}:{self.username})'
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    user_id = Column(Integer, autoincrement=True, primary_key=True)
+    username = Column(String)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.user_id}::@{self.username})'
+    # relationship()
+
+    def get_all_transactions(self, session):
+        return session.query(Transactions).filter(Transactions.user_id == self.user_id).order_by(Transactions.transaction_time).all()
+
+
+    def get_last_transactions(self, session, n):
+        return session.query(Transactions).filter(Transactions.user_id == self.user_id).order_by(
+            Transactions.transaction_time).limit(n).all()
+
+
+    def get_balance(self, session):
+        transactions = self.get_all_transactions(session)
+        return sum(transactions)
+
+
+class Transactions(Base):
+    __tablename__ = 'transactions'
+
+    transaction_id = Column(Integer, autoincrement=True, primary_key=True, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.user_id'))
+    user = relationship('User')
+
+    transaction_time = Column(DateTime, default=datetime.datetime.utcnow)
+
+    description = Column(String)
+    amount = Column(Integer)
+
+    def __repr__(self):
+        return f'TRZ({self.user_id}->{self.amount})'
+
+
+    def __add__(self, other):
+        if isinstance(other, Transactions):
+            return self.amount + other.amount
+        elif isinstance(other, int):
+            return self.amount + other
+
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
 
 
 class PollSessionIndex(Base):
@@ -54,13 +107,16 @@ class PollSessionIndex(Base):
     max_players_per_team = Column(Integer)
     pinned_message_id = Column(Integer)
 
-    username = relationship(
-        'Session2Player', backref='user', order_by='Session2Player.insert_time',
-        lazy='joined'
-    )
+    # users = relationship(
+    #     'Session2Player', backref='user', order_by='Session2Player.insert_time',
+    #     lazy='joined'
+    # )
+
+    # users = relationship('User', secondary='sessions2players_orm', back_populates='session_index_orm_wide')
+    users = relationship('User', secondary='sessions2players_orm')
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.session_id}:{self.username})'
+        return f'Pollsession({self.session_id}:)'
 
 
     @classmethod
@@ -84,8 +140,11 @@ class PollSessionIndex(Base):
             return 0
 
 
-    def add_player(self, session, username):
-        self.username.append(Session2Player(username=username, insert_time=datetime.datetime.now()))
+    def add_player(self, session, user):
+        if len(self.users) < self.max_players_per_team:
+            self.users.append(user)
+        else:
+            logging.warning(f'Num players {self.max_players_per_team} of current session is exceeded.')
         session.commit()
 
 
@@ -98,7 +157,7 @@ class PollSessionIndex(Base):
         return [item.username for item in active_session.username]
 
 
-    def remove_player(self, session, username):
+    def remove_player(self, session, user):
         '''
         Weird but cant invent better :c
 
@@ -108,17 +167,25 @@ class PollSessionIndex(Base):
         '''
 
         # pollsession = self.fetch_active_session(session)
-        player = session.query(Session2Player).filter(
-            and_(Session2Player.username == username)).first()
+        # player = session.query(Session2Player).filter(
+        #     and_(Session2Player.username == username)).first()
+        #
+        # print(f'PLAYERS!: {player}')
+        #
+        # if self.username:
+        #     logging.info(f'Removing {self.username}')
+        #     self.username.remove(player)
+        #
+        # else:
+        #     logging.warning(f'Current session is already empty')
 
-        print(f'PLAYERS!: {player}')
-        self.username.remove(player)
+        self.users.remove(user)
 
 
 
     @classmethod
     def fetch_exact_pollsession(cls, session, pollsession_id):
-        return session.query(cls).filter(cls.session_id == pollsession_id).options(joinedload(cls.username)).one()
+        return session.query(cls).filter(cls.session_id == pollsession_id).options(joinedload(cls.users)).one()
 
 
     # @classmethod
@@ -129,8 +196,8 @@ class PollSessionIndex(Base):
     @classmethod
     def fetch_all_users_by_session_id(cls, session, session_id: int):
         try:
-            one_session = session.query(cls).filter(cls.session_id == session_id).options(joinedload(cls.username)).one()
-            return [item.username for item in one_session.username]
+            one_session = session.query(cls).filter(cls.session_id == session_id).options(joinedload(cls.users)).one()
+            return [item.username for item in one_session.users]
         except NoResultFound:
             logging.info(f'Got empty user set: {cls} - {session_id}')
             return []
@@ -159,16 +226,6 @@ class GameIndex(Base):
 
     session = relationship('PollSessionIndex')
     session2player = relationship('Session2Player')
-
-
-class Player(Base):
-    __tablename__ = "players"
-
-    user_id = Column(Integer, autoincrement=True, primary_key=True)
-    username = Column(String)
-
-    score = Column(Float)
-    balance = Column(Float)
 
 
 
