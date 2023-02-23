@@ -20,6 +20,19 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from constants import PG_USER, PG_PASSWORD, PG_HOST
 
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+
+# # create the extension
+# db = SQLAlchemy()
+# # create the app
+# app = Flask(__name__)
+# # configure the SQLite database, relative to the app instance folder
+# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db"
+# # initialize the app with the extension
+# db.init_app(app)
+
+
 Base = declarative_base()
 metadata = MetaData()
 
@@ -32,7 +45,7 @@ class Session2Player(Base):
     game_id = Column(Integer, ForeignKey('game_index_orm.game_id'))
     # session = relationship('PollSessionIndex')
     session_id = Column(Integer, ForeignKey('session_index_orm_wide.session_id'))
-    # username = Column(String) #  User() object TODO!
+    user = relationship('User')
     user_id = Column(Integer, ForeignKey('users.user_id'))
     insert_time = Column(DateTime)
 
@@ -44,6 +57,7 @@ class User(Base):
     __tablename__ = "users"
 
     user_id = Column(Integer, autoincrement=True, primary_key=True)
+    telegram_id = Column(Integer, )
     username = Column(String)
 
     def __repr__(self):
@@ -91,7 +105,6 @@ class Transactions(Base):
         return self.__add__(other)
 
 
-
 class PollSessionIndex(Base):
 
     __tablename__ = "session_index_orm_wide"
@@ -123,7 +136,6 @@ class PollSessionIndex(Base):
     def fetch_active_session(cls, session, now):
         try:
             result = session.query(cls).filter((cls.session_start_time <= now) & (cls.session_end_time >= now)).first()
-            print(f'RES: {result}')
             return result
         except Exception as e:
             print(e)
@@ -154,7 +166,7 @@ class PollSessionIndex(Base):
         active_session = PollSessionIndex.fetch_active_session(session, now=now)
 
         # return active_session.username
-        return [item.username for item in active_session.username]
+        return [item.username for item in active_session.users]
 
 
     def remove_player(self, session, user):
@@ -165,21 +177,11 @@ class PollSessionIndex(Base):
         :param username:
         :return:
         '''
+        if user in self.users:
+            self.users.remove(user)
 
-        # pollsession = self.fetch_active_session(session)
-        # player = session.query(Session2Player).filter(
-        #     and_(Session2Player.username == username)).first()
-        #
-        # print(f'PLAYERS!: {player}')
-        #
-        # if self.username:
-        #     logging.info(f'Removing {self.username}')
-        #     self.username.remove(player)
-        #
-        # else:
-        #     logging.warning(f'Current session is already empty')
-
-        self.users.remove(user)
+        else:
+            logging.error(f'{user} is not in current session.')
 
 
 

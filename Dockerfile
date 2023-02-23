@@ -10,7 +10,7 @@ ENV PYTHONPATH /footballbot
 ENV FLASK_APP='routers.py'
 ENV pg_db='test_data'
 
-EXPOSE 80
+EXPOSE 5000
 
 CMD ["python", "routers.py"]
 #CMD [ "python", "./server_v2.py" ]

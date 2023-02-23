@@ -43,14 +43,6 @@ def fake():
     return faker.Faker(locale=['ru_RU'])
 
 
-# @pytest.fixture(autouse=True)
-# def cleanup(session):
-#     yield
-#     session.execute('''TRUNCATE TABLE sessions2players_orm CASCADE''')
-#     session.execute('''TRUNCATE TABLE session_index_orm_wide CASCADE''')
-#     session.commit()
-
-
 def insert_session_index_data(session, fake, players_sessions_num, add_n_active=1):
     num_sessions = len(players_sessions_num) if (not add_n_active) else (len(players_sessions_num) - add_n_active)
     session_start_time = fake.date_time_between(start_date='-100d', end_date='-99d')
@@ -103,10 +95,9 @@ def insert_sessions2players_data(session, fake, players_sessions_num):
         for i in range(num_players):
             username = fake.user_name()
             mapping[sess.session_id].append(username)
-            session.add_all([Session2Player(session=sess,
-                                           session_id=sess.session_id,
-                                           username=username,
-                                           insert_time=datetime.datetime.now())])
+            session.add_all([Session2Player(session_id=sess.session_id,
+                                           insert_time=datetime.datetime.now(),
+                                           user=User(username=username))])
     session.commit()
     return mapping
 
@@ -155,7 +146,6 @@ def test_transactions(session, fake):
     trans1 = Transactions(user=our_user, description='Зачисление на баланс', amount=1200)
     trans2 = Transactions(user=our_user, description='Игра (10/09/22)', amount=-650)
     trans3 = Transactions(user=our_user, description='Штраф', amount=-100)
-
     trans4 = Transactions(user=extra_user, description='Штраф', amount=-500)
 
     # print('RESULT: ', sum([trans1, trans2, trans3]))
@@ -238,7 +228,6 @@ def test_sorting_order(session, fake):
     print(active_session.get_current_list_of_players(session))
 
 
-
 def test_max_restrictions(session, fake):
     insert_session_index_data(session, fake, players_sessions_num=[3] * 5, add_n_active=1)
     active_session = PollSessionIndex.fetch_active_session(session, datetime.datetime.now())
@@ -246,9 +235,9 @@ def test_max_restrictions(session, fake):
     max_players_per_team = active_session.max_players_per_team
 
     for _ in range(max_players_per_team + 5):
-        active_session.add_player(session, fake.user_name())
+        active_session.add_player(session, User(username=fake.user_name()))
 
-    assert max_players_per_team == len(active_session.username)
+    assert max_players_per_team == len(active_session.users)
 
 
 def test_zero_level(session, fake):
@@ -258,14 +247,19 @@ def test_zero_level(session, fake):
 
     active_session = PollSessionIndex.fetch_active_session(session, datetime.datetime.now())
 
-    assert len(active_session.username) > 0
+    assert len(active_session.users) > 0
 
-    for user in active_session.get_current_list_of_players(session):
+    # for user in active_session.get_current_list_of_players(session):
+    all_users = active_session.users
+    print(len(active_session.users))
+    print(all_users)
+    for user in all_users:
+        print(user)
         active_session.remove_player(session, user)
 
-    active_session.remove_player(session, user)
+    # active_session.remove_player(session, user)
 
-    assert len(active_session.username) == 0
+    assert len(active_session.users) == 0
 
 
 
