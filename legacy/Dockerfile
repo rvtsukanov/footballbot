@@ -1,6 +1,6 @@
 FROM python:3.8
 WORKDIR /footballbot
-COPY . /footballbot
+COPY .. /footballbot
 
 RUN pip install -r requirements.txt
 

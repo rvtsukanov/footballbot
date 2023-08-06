@@ -1,7 +1,7 @@
 import pytest
-from server_v2 import PollSession, Run
+from legacy.server_v2 import Run
 import psycopg2
-from pg_snippets import insert_into_session_index, fetch_last_session_session_index, insert_one_player_into_sessions2players
+from legacy.pg_snippets import insert_into_session_index, fetch_last_session_session_index, insert_one_player_into_sessions2players
 from db.pg.db_creation_scripts import SESSION_INDEX_CREATE_SCRIPT, SESSION2PLAYERS_CREATE_SCRIPT, GAMES_CREATE_SCRIPT
 
 import faker
@@ -10,7 +10,7 @@ import random
 import datetime
 import logging
 
-from constants import PG_HOST, PG_PASSWORD, PG_USER
+from legacy.constants import PG_HOST, PG_PASSWORD, PG_USER
 PG_DB = 'test_data'
 
 

@@ -7,11 +7,9 @@ import faker
 import random
 
 from db.models import Base
-from constants import PG_HOST, PG_PASSWORD, PG_USER
+from legacy.constants import PG_HOST, PG_PASSWORD, PG_USER
 
-from sqlalchemy import and_
-
-from core import find_closest_game_date
+from legacy.core import find_closest_game_date
 
 import datetime
 PG_DB = 'test_data'

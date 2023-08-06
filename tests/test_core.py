@@ -1,5 +1,5 @@
-from scenarios import MessageScenario
-from core import find_closest_game_date
+from legacy.scenarios import MessageScenario
+from legacy.core import find_closest_game_date
 import pytest
 import datetime
 

@@ -3,7 +3,7 @@ import yaml
 from core import Player
 import json
 
-TOKEN = yaml.safe_load(open('./config.yaml', 'r'))['token'][0]
+TOKEN = yaml.safe_load(open('../config.yaml', 'r'))['token'][0]
 # API_PREFIX = 'https://api.telegram.org/bot{token}/{method_name}'
 #
 #

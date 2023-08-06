@@ -1,8 +1,5 @@
 import datetime
 import logging
-import yaml
-import os
-from collections import defaultdict
 import queue
 import constants
 
@@ -78,7 +75,7 @@ class PollSession:
 
     def remove_player_from_session(self, player):
         if player in self.player_set:
-            logging.info(f'Removing {player} from player-seta')
+            logging.info(f'Removing {player} from player-set')
             if self.player_set[player] > 1:
                 self.player_set[player] -= 1
 

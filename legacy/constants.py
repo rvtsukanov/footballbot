@@ -7,7 +7,7 @@ import logging
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 logging.info(f'Got root dir as {ROOT_DIR}')
 
-CONFIG_PATH = os.path.join(ROOT_DIR, 'config.yaml')
+CONFIG_PATH = os.path.join(ROOT_DIR, '../config.yaml')
 logging.info(f'Config then {CONFIG_PATH}')
 
 NUM_PLAYERS = yaml.safe_load(open(CONFIG_PATH, 'r'))['num_players']

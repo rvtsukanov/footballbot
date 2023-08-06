@@ -2,7 +2,7 @@ version: "3"
 
 services:
   flask:
-    build: .
+    build: ..
 
     environment:
         pg_db: 'test_data'
