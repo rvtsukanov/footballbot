@@ -37,7 +37,7 @@ class Run:
         self.bot = telebot.TeleBot(TOKEN, parse_mode="MARKDOWN")
         if debug:
             pass
-            # telebot.logger.setLevel(logging.DEBUG)
+            # telegrambot.logger.setLevel(logging.DEBUG)
 
         if debug:
             self.adjust_launcher_for_infinity_polling()
@@ -289,7 +289,7 @@ class Run:
         # @server.route('/' + TOKEN, methods=['POST'])
         # def getMessage():
         #     json_string = request.get_data().decode('utf-8')
-        #     update = telebot.types.Update.de_json(json_string)
+        #     update = telegrambot.types.Update.de_json(json_string)
         #     self.bot.process_new_updates([update])
         #     return "!", 200
         #

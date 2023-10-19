@@ -7,6 +7,8 @@ from footballbot.models.transactions import Transaction
 from footballbot.models.pollsession import Pollsession
 from footballbot.models.pollsession2player import Pollsession2Player
 from footballbot.models.player import Player
+import telebot
+import time
 
 class CustomView(ModelView):
     column_display_pk = True

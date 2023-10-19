@@ -1,6 +1,6 @@
 import os
 
-from footballbot.main import bp
+from footballbot.main import bp, tg
 from flask import Response
 from flask import request, jsonify
 
@@ -10,6 +10,27 @@ from footballbot.models.transactions import Transaction
 from footballbot.models.player import Player
 from footballbot.extensions import db, auth
 import hashlib
+import flask
+import telebot
+from config import Config
+config = Config()
+
+from footballbot.extensions import bot
+
+@bp.route(config.WEBHOOK_URL_PATH, methods=['POST'])
+def webhook():
+    if flask.request.headers.get('content-type') == 'application/json':
+        json_string = flask.request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return ''
+    else:
+        flask.abort(403)
+
+
+@bp.cli.command("init_db")
+def init_db():
+    db.create_all()
 
 
 @auth.verify_token
@@ -28,6 +49,11 @@ def get_user_roles(player):
 @auth.login_required(role='admin')
 def ps():
     return str(auth.current_user())
+
+
+@bp.route('/hc')
+def hc():
+    return '200'
 
 
 @bp.route('/fetch_last_pollsession')
