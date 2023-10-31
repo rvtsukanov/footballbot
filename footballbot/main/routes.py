@@ -13,9 +13,15 @@ import hashlib
 import flask
 import telebot
 from config import Config
+import click
 config = Config()
 
 from footballbot.extensions import bot
+
+@bp.cli.command('initdb')
+def initdb():
+    db.create_all()
+
 
 @bp.route(config.WEBHOOK_URL_PATH, methods=['POST'])
 def webhook():
@@ -31,6 +37,35 @@ def webhook():
 @bp.cli.command("init_db")
 def init_db():
     db.create_all()
+
+
+@bp.cli.command("create_fake_data")
+def create_fake_data():
+    import datetime
+
+    db.create_all()
+
+    p1 = Player(player_id=123, telegram_name='@abc', role='admin', secret='ABC')
+    p2 = Player(player_id=456, telegram_name='@def', role='admin', secret='XYZ')
+    p3 = Player(player_id=789, telegram_name='@xyz', role='player', secret='EDF')
+
+    now = datetime.datetime.now()
+    left = now - datetime.timedelta(days=3)
+    right = now + datetime.timedelta(days=3)
+
+    ps_old = Pollsession(teams_number=2,
+                     max_players_per_team=5,
+                     creation_dt=datetime.datetime(2021, 1, 1),
+                     matchtime_dt=datetime.datetime(2021, 1, 5))
+
+    ps_active = Pollsession(teams_number=2,
+                         max_players_per_team=5,
+                         creation_dt=left,
+                         matchtime_dt=right)
+
+    db.session.add_all([ps_old, ps_active])
+    db.session.add_all([p1, p2, p3])
+    db.session.commit()
 
 
 @auth.verify_token
@@ -61,6 +96,13 @@ def hc():
 def fetch_last_pollsession():
     last_pollsession = Pollsession.fetch_last_pollsession()
     return jsonify(last_pollsession.to_dict())
+
+
+@bp.route('/fetch_active_pollsession')
+@auth.login_required(role=['player', 'admin'])
+def fetch_active_pollsession():
+    active_pollsession = Pollsession.fetch_active_pollsession()
+    return jsonify(active_pollsession.to_dict())
 
 
 @bp.route('/create_new_player', methods=['POST'])

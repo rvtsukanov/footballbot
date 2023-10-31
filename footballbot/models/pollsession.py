@@ -6,6 +6,7 @@ from footballbot.helpers import find_closest_game_date
 import datetime
 from sqlalchemy import and_
 import json
+from collections import Counter
 
 _find_closest_game_date = lambda context: find_closest_game_date(context.get_current_parameters()['creation_dt'])
 
@@ -116,5 +117,42 @@ class Pollsession(db.Model, SerializerMixin):
         return cls.query.filter_by(pollsession_id=pollsession_id).first()
 
     @classmethod
+    def find_pollsession_by_message(cls, message_id):
+        return cls.query.filter_by(pinned_message_id=message_id).one()
+
+    @classmethod
     def find_all_uncalculated_sessions(cls):
         return cls.query.filter_by(is_calculated=False).all()
+
+    def render(self):
+        emoji_status = u'\U000027a1' if self._check_new_players_available() else u'\U0000274c'
+        header = emoji_status + f'<b> Голосование от {self.creation_dt.date()} \nдля записи на игру: {self.matchtime_dt.date()}</b>'
+        # [X----][10/15]
+        BARS_NUM = 10
+
+        progress_bar = ['.'] * BARS_NUM
+        for i in range(int(BARS_NUM * self.current_players_num / self.max_players)):
+            progress_bar[i] = 'X'
+
+        status_bar = f'<b>[{self.current_players_num}|{self.max_players}][{"".join(progress_bar)}]</b>'
+        spaces = '\n'
+        rows = [header, status_bar, spaces]
+
+        telegram_names = self.get_players_telegram_names()
+
+        counts = Counter(telegram_names)
+
+        print(counts)
+
+        for nick, num in counts.items():
+            if num == 1:
+                row = f'[·] {nick}'
+            elif num > 1:
+                row = f'[·] {nick} (x{num})'
+
+            row = row.replace("_", "\_")
+            rows.append(row)
+
+        # for n, vote in enumerate(self.player_votes):
+
+        return '\n'.join(rows)

@@ -7,6 +7,8 @@ from footballbot.models.pollsession2player import Pollsession2Player
 from footballbot.models.transactions import Transaction
 import faker
 import time
+import random
+import uuid
 
 
 
@@ -128,4 +130,45 @@ def make_scenario_5(app):
                              matchtime_dt=right)
 
         db.session.add_all([ps_old, ps_active])
+        db.session.commit()
+
+def make_scenario_for_UAT(app):
+    with app.app_context():
+        db.create_all()
+        p0 = Player(player_id=0, telegram_name='', role='admin', secret=uuid.uuid1().hex)
+        p1 = Player(player_id=123, telegram_name='@abcd', role='admin', secret='ABC')
+        p2 = Player(player_id=456, telegram_name='@defgf', role='admin', secret='XYZ')
+        p3 = Player(player_id=789, telegram_name='@xyza', role='player', secret='EDF')
+        p4 = Player(player_id=188727612, telegram_name='@rvtsukanov', role='admin', secret='RVTS')
+
+        now = datetime.datetime.now()
+        left = now - datetime.timedelta(days=3)
+        right = now + datetime.timedelta(days=3)
+
+        ps_old = Pollsession(teams_number=2,
+                             max_players_per_team=5,
+                             creation_dt=datetime.datetime(2021, 1, 1),
+                             matchtime_dt=datetime.datetime(2021, 1, 5))
+
+        ps_active = Pollsession(teams_number=2,
+                                max_players_per_team=5,
+                                creation_dt=left,
+                                matchtime_dt=right)
+        transactions = []
+
+        for _ in range(25):
+            sign = 1 if random.randint(0, 2) == 1 else -1
+            transactions.append(Transaction(player=p1, amount=sign * random.randint(100, 200)))
+            transactions.append(Transaction(player=p2, amount=sign * random.randint(100, 200)))
+            transactions.append(Transaction(player=p3, amount=sign * random.randint(100, 200)))
+            transactions.append(Transaction(player=p4, amount=sign * random.randint(100, 200)))
+
+        # ps_active.player_votes.append(Pollsession2Player(player=p0))
+        ps_active.player_votes.append(Pollsession2Player(player=p1))
+        ps_active.player_votes.append(Pollsession2Player(player=p1))
+        ps_active.player_votes.append(Pollsession2Player(player=p2))
+
+        db.session.add_all([ps_old, ps_active])
+        db.session.add_all([p0, p1, p2, p3, p4])
+        db.session.add_all(transactions)
         db.session.commit()

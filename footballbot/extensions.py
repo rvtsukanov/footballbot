@@ -5,36 +5,44 @@ import telebot
 import time
 import logging
 
-# def create_bot(config):
-#     config = Config()
-#     bot = telegrambot.TeleBot(config.API_TOKEN)
-#     bot.remove_webhook()
-#     time.sleep(0.1)
-#     bot.set_webhook(url=config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH,
-#                     certificate=open(config.WEBHOOK_SSL_CERT, 'r'))
-#
-#     return bot
+import threading
+from telebot.async_telebot import AsyncTeleBot
+
+logger = logging.getLogger('bot_init')
 
 def create_bot(config):
-    bot = telebot.TeleBot(config.API_TOKEN)
+    print('Creating bot')
+    bot = telebot.TeleBot(config.API_TOKEN, threaded=False, num_threads=1, parse_mode='html')
+    # bot = AsyncTeleBot(config.API_TOKEN)
 
-    if config.WEBHOOK_HOST == '127.0.0.1':
-        print('Start polling')
-        # bot.infinity_polling()
-
-    else:
-        print('Removing old webhook')
+    if not config.DEBUG:
+        logger.info('Removing old webhook')
         bot.remove_webhook()
-        print('Sleep 10 seconds')
-        time.sleep(10)
+        logger.info('Sleep 10 seconds')
+        time.sleep(1)
+        logger.info(f'Setting new url: {config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH}')
         print(f'Setting new url: {config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH}')
         bot.set_webhook(url=config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH,
                         certificate=open(config.WEBHOOK_SSL_CERT, 'r'))
-
+    else:
+        logger.info('Running local-threaded version of polling')
+        bot.remove_webhook()
+        time.sleep(1)
+        logging.info('Starting new thread for polling')
+        threading.Thread(target=start_bot_infinity_polling, args=(bot, )).start()
+        logging.info('Starting Flask')
     return bot
 
 
-config = Config()
+def start_bot_infinity_polling(bot):
+    logger.info('Start infinity polling')
+    bot.infinity_polling(timeout=4)
+
+
 auth = HTTPTokenAuth()
 db = SQLAlchemy()
-bot = create_bot(config)
+# config = Config()
+# from footballbot.app import app
+# bot = create_bot(app.config)
+fsa = {}  # very dumb way to realise it but anyway...
+
