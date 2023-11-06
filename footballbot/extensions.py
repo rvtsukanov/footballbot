@@ -1,19 +1,22 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPTokenAuth
-from config import Config
+from config import Config, ProductionConfig
 import telebot
 import time
 import logging
+import os
 
 import threading
 from telebot.async_telebot import AsyncTeleBot
 
 logger = logging.getLogger('bot_init')
 
-def create_bot(config):
+def create_bot():
+    config_class = Config if os.getenv('FLASK_DEBUG', default=False) else ProductionConfig
+    config = config_class()
     print('Creating bot')
+    print(f'CFG: {config.DEBUG}')
     bot = telebot.TeleBot(config.API_TOKEN, threaded=False, num_threads=1, parse_mode='html')
-    # bot = AsyncTeleBot(config.API_TOKEN)
 
     if not config.DEBUG:
         logger.info('Removing old webhook')
@@ -29,6 +32,7 @@ def create_bot(config):
         bot.remove_webhook()
         time.sleep(1)
         logging.info('Starting new thread for polling')
+        print('Starting new thread for polling')
         threading.Thread(target=start_bot_infinity_polling, args=(bot, )).start()
         logging.info('Starting Flask')
     return bot
@@ -41,8 +45,6 @@ def start_bot_infinity_polling(bot):
 
 auth = HTTPTokenAuth()
 db = SQLAlchemy()
-# config = Config()
-# from footballbot.app import app
-# bot = create_bot(app.config)
+# bot = create_bot()
 fsa = {}  # very dumb way to realise it but anyway...
 

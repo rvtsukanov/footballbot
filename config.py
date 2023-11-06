@@ -15,7 +15,7 @@ class Config:
     WEBHOOK_PORT = 443  # 443, 80, 88 or 8443 (port need to be 'open')
     # WEBHOOK_PORT = 5000  # 443, 80, 88 or 8443 (port need to be 'open')
     WEBHOOK_LISTEN = '0.0.0.0'  # In some VPS you may need to put here the IP addr
-    API_TOKEN = ''
+    API_TOKEN = '1462545698:AAEkNSWI7BRhugCWmvneBYrMeQRgaPAfIr0'
     WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
     WEBHOOK_URL_PATH = "/%s/" % (API_TOKEN)
     GROUP_ID = -539481325
@@ -27,7 +27,7 @@ class Config:
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:////var/lib/database2/database.db'
     WEBHOOK_HOST = os.environ.get('PUBLIC_IP', default='127.0.0.1')
-    API_TOKEN = ''  # if you want another bot?
+    API_TOKEN = '1462545698:AAEkNSWI7BRhugCWmvneBYrMeQRgaPAfIr0'  # if you want another bot?
     GROUP_ID = -539481325  # testing env
     DEBUG = False
     TESTING = False
