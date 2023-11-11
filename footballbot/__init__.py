@@ -7,12 +7,9 @@ from footballbot.models.transactions import Transaction
 from footballbot.models.pollsession import Pollsession
 from footballbot.models.pollsession2player import Pollsession2Player
 from footballbot.models.player import Player
-from footballbot.telegrambot.handlers import repeat_all_messages
 import os
 import telebot
 import time
-
-bot = create_bot()
 
 class CustomView(ModelView):
     def is_accessible(self):
@@ -31,7 +28,9 @@ class CustomViewP2P(ModelView):
     column_list = ('pollsession_id', 'player_id', 'insert_dt')
 
 def create_app(config_class=ProductionConfig):
-    config_class = Config if os.getenv('FLASK_DEBUG', default=False) else ProductionConfig
+    config_class = Config if bool(os.getenv('FLASK_DEBUG', default=False)) == True else ProductionConfig
+    print(isinstance(config_class, ProductionConfig))
+    print(vars(config_class))
     app = Flask(__name__)
 
     app.config.from_object(config_class)
@@ -49,14 +48,10 @@ def create_app(config_class=ProductionConfig):
     from footballbot.main import bp as main_bp
     app.register_blueprint(main_bp)
 
-    # @bot.message_handler(content_types=["text"])
-    # def repeat_all_messages(message):  # Название функции не играет никакой роли
-    #     with app.app_context():
-    #         bot.send_message(message.chat.id, message.text)
-
-    repeat_all_messages(app)
-
     return app
+
+
+app = create_app()
 
 # bot = create_bot(app.config) # its wrong place for bot
 

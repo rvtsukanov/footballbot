@@ -9,7 +9,7 @@ RUN pip install -r requierments.txt
 RUN apt-get update && apt-get -y install vim
 
 #ENV DATABASE_URI=sqlite:////var/lib/database2/database.db
-ENV FLASK_DEBUG=false
+ENV FLASK_DEBUG=False
 VOLUME /var/lib/database2/:/var/lib/database2
 
 EXPOSE 443

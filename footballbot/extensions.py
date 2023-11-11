@@ -45,6 +45,6 @@ def start_bot_infinity_polling(bot):
 
 auth = HTTPTokenAuth()
 db = SQLAlchemy()
-# bot = create_bot()
+bot = create_bot()
 fsa = {}  # very dumb way to realise it but anyway...
 

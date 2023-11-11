@@ -17,7 +17,7 @@ import click
 config = Config()
 
 # from footballbot.extensions import bot
-from footballbot import bot
+from footballbot.extensions import bot
 
 @bp.cli.command('initdb')
 def initdb():

@@ -17,7 +17,7 @@ REGISTRY_ID=$(yc container registry get $REGISTRY_NAME | head -n 1 | cut -d ' ' 
 IMAGE_NAME=$CONTAINER_REGISTRY_URL/$REGISTRY_ID/$IMAGE_NICK:$TAG
 
 echo Start building ${IMAGE_NAME}
-docker build . -t $IMAGE_NAME
+docker build . --no-cache -t $IMAGE_NAME
 docker push $IMAGE_NAME
 
 RUNNING_ID=$(yc compute instance get football | head -n 1 | grep id | cut -d ' ' -f2)
