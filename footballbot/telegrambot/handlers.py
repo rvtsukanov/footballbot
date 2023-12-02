@@ -2,7 +2,7 @@ import flask
 import requests
 
 from footballbot.extensions import db, fsa
-from config import Config
+from config import BaseConfig
 from footballbot.models.pollsession import Pollsession
 from footballbot.models.player import Player
 from flask import redirect, url_for
@@ -10,6 +10,7 @@ import telebot
 from footballbot.telegrambot.plus_minus_markup import plus_minus_markup
 import os
 import hashlib
+from footballbot.telegrambot.decorators import admin_only
 
 from footballbot import app
 config = app.config
@@ -33,7 +34,15 @@ def get_ps(message):
 
         bot.send_message(message.chat.id, '\n'.join([p['player']['telegram_name'] for p in json['player_votes']]))
 
+@bot.message_handler(commands=['pollstatus'])
+@admin_only
+def pollstatus(message):
+    with app.app_context():
+        active_session = Pollsession.fetch_active_pollsession()
+        bot.reply_to(message=message, text=f'active_session is {active_session.pollsession_id}')
 
+
+@admin_only
 @bot.message_handler(commands=['register_player'])
 def register_player(message):
     with app.app_context():
@@ -52,6 +61,10 @@ def register_player(message):
 
         else:
             bot.reply_to(message=message, text=f'Player {player.telegram_name} (id {player.player_id}) already exists.')
+
+
+# @admin_only
+# @group_only
 
 
 @bot.message_handler(commands=['destroy_active_session'])
@@ -105,12 +118,12 @@ def callback_query(call):
         if "+" in call.data:
             pollsession.add_player(player)
             db.session.commit()
-            bot.edit_message_text(text=pollsession.render(), chat_id=config.GROUP_ID, message_id=pollsession.pinned_message_id,
+            bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'], message_id=pollsession.pinned_message_id,
                                   reply_markup=plus_minus_markup)
         elif "-" in call.data:
             pollsession.delete_player(player)
             db.session.commit()
-            bot.edit_message_text(text=pollsession.render(), chat_id=config.GROUP_ID,
+            bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'],
                                   message_id=pollsession.pinned_message_id, reply_markup=plus_minus_markup)
 
 
@@ -156,7 +169,7 @@ def callback_create_pollsession_num_players(call):
                      text=f'Session with <b>id={created_pollsession.pollsession_id}</b> created at {created_pollsession.creation_dt}\n' +
                           f'Number of teams is {pollsession.teams_number}\nTotal number of players is {pollsession.max_players}')
 
-        sended_msg = bot.send_message(config.GROUP_ID, pollsession.render(), reply_markup=plus_minus_markup)
+        sended_msg = bot.send_message(config['GROUP_ID'], pollsession.render(), reply_markup=plus_minus_markup)
 
         bot.pin_chat_message(sended_msg.chat.id, sended_msg.message_id)
 

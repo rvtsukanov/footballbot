@@ -2,10 +2,12 @@ import datetime
 import logging
 import queue
 
-from config import Config
+from config import BaseConfig
+
+
 def find_closest_game_date(time,
-                           matchday=Config.MATCHDAY,
-                           matchtime=Config.MATCHTIME,
+                           matchday=BaseConfig().MATCHDAY,
+                           matchtime=BaseConfig().MATCHTIME,
                            hours_offset: int = 2
                            ):
     if time.weekday() == matchday:

@@ -1,6 +1,6 @@
 import os
 
-from footballbot.main import bp, tg
+from footballbot.main import bp
 from flask import Response
 from flask import request, jsonify
 
@@ -11,28 +11,13 @@ from footballbot.models.player import Player
 from footballbot.extensions import db, auth
 import hashlib
 import flask
-import telebot
-from config import Config
-import click
-config = Config()
 
 # from footballbot.extensions import bot
-from footballbot.extensions import bot
+# from footballbot import app
 
 @bp.cli.command('initdb')
 def initdb():
     db.create_all()
-
-
-@bp.route(config.WEBHOOK_URL_PATH, methods=['POST'])
-def webhook():
-    if flask.request.headers.get('content-type') == 'application/json':
-        json_string = flask.request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return ''
-    else:
-        flask.abort(403)
 
 
 @bp.cli.command("init_db")
@@ -161,6 +146,18 @@ def register_new_player():
     db.session.add(player)
     db.session.commit()
     return Response(status=200)
+
+
+@bp.route('/init_response')
+def init_responce():
+    return flask.redirect('/inner_slope')
+
+
+@bp.route('/inner_slope')
+@auth.login_required(role='admin')
+def inner_slope():
+    return "Ima gangster"
+
 
 
 @bp.route('/add_player_to_active_pollsession', methods=['POST'])

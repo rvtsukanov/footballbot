@@ -2,11 +2,9 @@ import os
 
 from footballbot import create_app
 from footballbot import app
-from footballbot.extensions import bot
 
 
 from footballbot.extensions import db
-from footballbot.telegrambot import handlers
 from footballbot.extensions import start_bot_infinity_polling
 from tests.scenarios import make_scenario_for_UAT
 
@@ -16,6 +14,9 @@ logging.basicConfig()
 logging.root.setLevel(logging.NOTSET)
 
 config = app.config
+
+if config['RUN_TELEGRAM_BOT']:
+    from footballbot.telegrambot import handlers
 
 
 # IDK if really needed

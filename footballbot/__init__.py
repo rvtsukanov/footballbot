@@ -1,5 +1,5 @@
 from flask import Flask
-from config import Config, ProductionConfig
+from config import BaseConfig, ProductionConfig, TestConfig
 from footballbot.extensions import db, auth, create_bot
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -7,6 +7,8 @@ from footballbot.models.transactions import Transaction
 from footballbot.models.pollsession import Pollsession
 from footballbot.models.pollsession2player import Pollsession2Player
 from footballbot.models.player import Player
+from distutils.util import strtobool
+
 import os
 import telebot
 import time
@@ -27,16 +29,41 @@ class CustomViewP2P(ModelView):
     column_hide_backrefs = False
     column_list = ('pollsession_id', 'player_id', 'insert_dt')
 
-def create_app(config_class=ProductionConfig):
-    config_class = Config if bool(os.getenv('FLASK_DEBUG', default=False)) == True else ProductionConfig
+def create_app(config_name='base'):
+
+    config = {'base': BaseConfig,
+              'production': ProductionConfig,
+              'test': TestConfig}
+    print(f'CFG NAME: ', config_name)
+
+    # FLASK_PRODUCTION_SERVER is entrypoint for local-vs-production run
+    # OVERRIDES:
+    #     SQLALCHEMY_DATABASE_URI
+    #     WEBHOOK_HOST
+    #     API_TOKEN
+    #     GROUP_ID
+    #     DEBUG
+    #     TESTING
+    #     FLASK_ENV
+    #
+
+    if strtobool(os.getenv('FLASK_PRODUCTION_SERVER', default=False)) == True:
+        config_name = 'production'
+
+    config_class = config[config_name].__call__()
+
+    print(f'CFG NAME: ', config_name)
     print(isinstance(config_class, ProductionConfig))
     print(vars(config_class))
     app = Flask(__name__)
 
     app.config.from_object(config_class)
+    # app.config.from_envvar('YOURAPPLICATION_SETTINGS', silent=True)
+
     db.init_app(app)
 
-    # app.config['FLASK_ADMIN_SWATCH'] = 'superhero'
+    # app.bot = create_bot()
+
     app.config['FLASK_ADMIN_SWATCH'] = 'Superhero'
     admin = Admin(app, name='', template_mode='bootstrap3')
 
