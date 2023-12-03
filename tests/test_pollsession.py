@@ -10,8 +10,7 @@ def test_get_lastly_added_n_players(app_scenario_1):
         active_pollsession.decrease_num_players_by_n(3)
 
 
-def test_increase_num__by_n(app_scenario_1):
+def test_increase_num_by_n(app_scenario_1):
     with app_scenario_1.app_context():
         active_pollsession = Pollsession.fetch_active_pollsession()
         active_pollsession.increase_num_players_by_n(3)
-    pass
