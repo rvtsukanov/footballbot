@@ -1,13 +1,15 @@
 import telebot
 
 
-def make_plus_minus_markup():
+def make_plus_minus_markup(activate=True):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.row_width = 2
-    markup.add(
-        telebot.types.InlineKeyboardButton("+", callback_data=f"+"),
-        telebot.types.InlineKeyboardButton("-", callback_data=f"-")
-    )
-    return markup
 
-plus_minus_markup = make_plus_minus_markup()
+    if activate:
+        markup.add(
+            telebot.types.InlineKeyboardButton("➕", callback_data=f"+"),
+            telebot.types.InlineKeyboardButton("➖", callback_data=f"-")
+        )
+        markup.add(telebot.types.InlineKeyboardButton("Активировать", callback_data=f"Calculate"))
+
+    return markup

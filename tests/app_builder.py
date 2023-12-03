@@ -9,15 +9,15 @@ def build_scenario(scenario_maker):
     @pytest.fixture
     def app_scenario():
         basedir = os.path.abspath(os.path.dirname(__file__))
-        uri = 'sqlite:///' + os.path.join(basedir, 'local.db')
-        print(uri)
 
-        app = create_app()
-        app.config.update({
-            "SQLALCHEMY_DATABASE_URI": uri,
-            "TESTING": True,
-            "DEBUG": True
-        })
+        app = create_app(config_name='test')
+
+        # app.config.update({
+        #     "SQLALCHEMY_DATABASE_URI": uri,
+        #     "TESTING": True,
+        #     "DEBUG": True
+        # })
+
         with app.app_context():
             db.create_all()
         scenario_maker(app)

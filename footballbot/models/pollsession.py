@@ -1,3 +1,6 @@
+import logging
+import math
+
 from footballbot.extensions import db
 from sqlalchemy_serializer import SerializerMixin
 from footballbot.models.pollsession2player import Pollsession2Player
@@ -7,6 +10,7 @@ import datetime
 from sqlalchemy import and_
 import json
 from collections import Counter
+from sqlalchemy.exc import NoResultFound
 
 _find_closest_game_date = lambda context: find_closest_game_date(context.get_current_parameters()['creation_dt'])
 
@@ -65,11 +69,37 @@ class Pollsession(db.Model, SerializerMixin):
     @classmethod
     def fetch_active_pollsession(cls):
         now = datetime.datetime.now()
-        return cls.query.filter(and_(now >= cls.creation_dt, now <= cls.matchtime_dt)).one()
+        try:
+            ans = cls.query.filter(and_(now >= cls.creation_dt, now <= cls.matchtime_dt)).one()
+            logging.info(f'found: {ans}')
+            return ans
+
+        except NoResultFound:
+            return []
 
 
     def get_lastly_added_player(self):
         return self.player_votes.order_by(Pollsession2Player.insert_dt.desc()).first().player
+
+    def get_lastly_added_n_players(self, n):
+        return [vote.player for vote in self.player_votes.order_by(Pollsession2Player.insert_dt.desc()).limit(n).all()]
+
+    def decrease_num_players_by_n(self, n):
+        last_added_players = self.get_lastly_added_n_players(n)
+        if self.current_players_num >= len(last_added_players):
+            for player in last_added_players:
+                self.delete_player(player)
+
+            self.max_players_per_team -= math.floor(n // self.teams_number)
+
+        db.session.add(self)
+        db.session.commit()
+
+
+    def increase_num_players_by_n(self, n):
+        self.max_players_per_team += math.floor(n // self.teams_number)
+        db.session.add(self)
+        db.session.commit()
 
 
     def add_player(self, player):
@@ -91,26 +121,32 @@ class Pollsession(db.Model, SerializerMixin):
 
     def get_players_telegram_names(self):
         votes = self.player_votes.all()
-        return [vote.player.telegram_name for vote in votes]
+        if votes:
+            return [vote.player.telegram_name for vote in votes]
+        else:
+            return []
 
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
-    def calculate_pollsession(self, total_amount,
+    def calculate_pollsession(self, amount,
                               exceptions=None):
         n = len(self.player_votes_rendered)
-        if not self.is_active or not self.is_calculated:
-            transactions = []
-            for vote in self.player_votes_rendered:
-                transactions.append(Transaction(player=vote.player, amount=-total_amount / n,
-                            description=f'Игра {self.matchtime_dt.date()}'))
-            self.is_calculated = True
-            db.session.add_all(transactions)
-            db.session.commit()
+        if n > 0:
+            if not self.is_active or not self.is_calculated:
+                transactions = []
+                for vote in self.player_votes_rendered:
+                    transactions.append(Transaction(player=vote.player, amount=-amount,
+                                description=f'Игра {self.matchtime_dt.date()}'))
+                self.is_calculated = True
+                db.session.add_all(transactions)
+                db.session.commit()
+            else:
+                raise ValueError('Session is active or already calculated.')
         else:
-            raise ValueError('Session is active or already calculated.')
+            raise ValueError('Vote list is emtpy.')
 
     @classmethod
     def find_pollsession_by_id(cls, pollsession_id):
@@ -125,34 +161,30 @@ class Pollsession(db.Model, SerializerMixin):
         return cls.query.filter_by(is_calculated=False).all()
 
     def render(self):
+        MONEY = '💰'
+        DONE = '✅'
         emoji_status = u'\U000027a1' if self._check_new_players_available() else u'\U0000274c'
-        header = emoji_status + f'<b> Голосование от {self.creation_dt.date()} \nдля записи на игру: {self.matchtime_dt.date()}</b>'
-        # [X----][10/15]
+
+        if self.is_calculated:
+            emoji_status = MONEY + DONE
+
+        header = emoji_status + f'<b> Голосование от {self.creation_dt.date()} \nдля записи на игру: {self.matchtime_dt.date()}</b> \n'
         BARS_NUM = 10
-
-        progress_bar = ['.'] * BARS_NUM
+        FILLED_RECT = '□'
+        EMPTY_RECT = '■'
+        BULLET = '▶'
+        progress_bar = [FILLED_RECT] * BARS_NUM
         for i in range(int(BARS_NUM * self.current_players_num / self.max_players)):
-            progress_bar[i] = 'X'
-
-        status_bar = f'<b>[{self.current_players_num}|{self.max_players}][{"".join(progress_bar)}]</b>'
+            progress_bar[i] = EMPTY_RECT
+        status_bar = f'<b> {"".join(progress_bar)}  [{self.current_players_num} | {self.max_players}]</b>'
         spaces = '\n'
         rows = [header, status_bar, spaces]
-
         telegram_names = self.get_players_telegram_names()
-
         counts = Counter(telegram_names)
-
-        print(counts)
-
         for nick, num in counts.items():
             if num == 1:
-                row = f'[·] {nick}'
+                row = f'{BULLET} @{nick}'
             elif num > 1:
-                row = f'[·] {nick} (x{num})'
-
-            row = row.replace("_", "\_")
+                row = f'{BULLET} @{nick} (x{num})'
             rows.append(row)
-
-        # for n, vote in enumerate(self.player_votes):
-
-        return '\n'.join(rows)
+        return '\n'.join(rows) + '\n'

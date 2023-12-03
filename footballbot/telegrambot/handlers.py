@@ -7,7 +7,7 @@ from footballbot.models.pollsession import Pollsession
 from footballbot.models.player import Player
 from flask import redirect, url_for
 import telebot
-from footballbot.telegrambot.plus_minus_markup import plus_minus_markup
+from footballbot.telegrambot.plus_minus_markup import make_plus_minus_markup
 import os
 import hashlib
 from footballbot.telegrambot.decorators import admin_only
@@ -34,16 +34,20 @@ def get_ps(message):
 
         bot.send_message(message.chat.id, '\n'.join([p['player']['telegram_name'] for p in json['player_votes']]))
 
+# @admin_only
 @bot.message_handler(commands=['pollstatus'])
 @admin_only
 def pollstatus(message):
     with app.app_context():
         active_session = Pollsession.fetch_active_pollsession()
-        bot.reply_to(message=message, text=f'active_session is {active_session.pollsession_id}')
+        if active_session:
+            bot.reply_to(message=message, text=f'active_session is {active_session.pollsession_id} \n\n {active_session.render()}')
+        else:
+            bot.reply_to(message=message,
+                         text=f'Session not found. Create it first.')
 
 
-@admin_only
-@bot.message_handler(commands=['register_player'])
+@bot.message_handler(commands=['register'], chat_types='private')
 def register_player(message):
     with app.app_context():
         player = Player.find_player(player_id=message.from_user.id)
@@ -63,10 +67,7 @@ def register_player(message):
             bot.reply_to(message=message, text=f'Player {player.telegram_name} (id {player.player_id}) already exists.')
 
 
-# @admin_only
-# @group_only
-
-
+@admin_only
 @bot.message_handler(commands=['destroy_active_session'])
 def destroy_active_session(message):
     with app.app_context():
@@ -90,9 +91,9 @@ def create_new_pollsession(message):
             markup = telebot.types.InlineKeyboardMarkup()
             markup.row_width = 3
             markup.add(
-                telebot.types.InlineKeyboardButton("2", callback_data=f"2"),
-                telebot.types.InlineKeyboardButton("3", callback_data=f"3"),
-                telebot.types.InlineKeyboardButton("4", callback_data=f"4"),
+                telebot.types.InlineKeyboardButton("2", callback_data="2"),
+                telebot.types.InlineKeyboardButton("3", callback_data="3"),
+                telebot.types.InlineKeyboardButton("4", callback_data="4"),
             )
             bot.reply_to(message=message,
                          text='Choose num_teams for following pollsession from markup or type manually.',
@@ -101,13 +102,14 @@ def create_new_pollsession(message):
             fsa['create_new_pollsession'] = {}
 
 
-@bot.message_handler(commands=['get_ps'])
-def get_ps(message):
-    with app.app_context():
-        print(message)
-        message_id = message.message_id
+@bot.message_handler(commands=['decrease_players_num'])
+def decrease_players_num(message):
+    if Pollsession.check_if_active_exists():
+        active_pollsession = Pollsession.fetch_active_pollsession()
+        # active_pollsession
 
-        bot.send_message(message.chat.id, Pollsession.fetch_active_pollsession().render(), reply_markup=markup)
+
+
 
 @bot.callback_query_handler(func=lambda call: "Голосование" in call.message.text)
 def callback_query(call):
@@ -118,20 +120,26 @@ def callback_query(call):
         if "+" in call.data:
             pollsession.add_player(player)
             db.session.commit()
-            bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'], message_id=pollsession.pinned_message_id,
-                                  reply_markup=plus_minus_markup)
+            bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'],
+                                  message_id=pollsession.pinned_message_id,
+                                  reply_markup=make_plus_minus_markup())
         elif "-" in call.data:
             pollsession.delete_player(player)
             db.session.commit()
             bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'],
-                                  message_id=pollsession.pinned_message_id, reply_markup=plus_minus_markup)
+                                  message_id=pollsession.pinned_message_id, reply_markup=make_plus_minus_markup())
+
+        elif 'Calculate' in call.data:
+            player = Player.find_player(player_id=player_id)
+            if player.get_role() == 'admin':
+                pollsession.calculate_pollsession(config['GAME_COST'])
+                bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'],
+                                      message_id=pollsession.pinned_message_id, reply_markup=make_plus_minus_markup(activate=False))
 
 
 @bot.callback_query_handler(func=lambda call: 'Choose num_teams for' in call.message.text)
 def callback_create_pollsession_num_teams(call):
     fsa['create_new_pollsession'] = {'teams_number': call.data}
-
-    print(call.data)
 
     rng_players_per_team_map = {2: [10, 12, 14, 16, 18, 20],
                                 3: [12, 15, 18, 21],
@@ -169,12 +177,9 @@ def callback_create_pollsession_num_players(call):
                      text=f'Session with <b>id={created_pollsession.pollsession_id}</b> created at {created_pollsession.creation_dt}\n' +
                           f'Number of teams is {pollsession.teams_number}\nTotal number of players is {pollsession.max_players}')
 
-        sended_msg = bot.send_message(config['GROUP_ID'], pollsession.render(), reply_markup=plus_minus_markup)
+        sended_msg = bot.send_message(config['GROUP_ID'], pollsession.render(), reply_markup=make_plus_minus_markup())
 
         bot.pin_chat_message(sended_msg.chat.id, sended_msg.message_id)
-
-        print('sended', sended_msg)
-        print('sended', sended_msg.message_id)
 
         pollsession.pinned_message_id = sended_msg.message_id
         db.session.commit()

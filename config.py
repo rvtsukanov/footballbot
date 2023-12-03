@@ -27,11 +27,13 @@ class BaseConfig(BaseSettings):
     # SERVER_NAME = '127.0.0.1'
     PREFERRED_URL_SCHEME: str = 'https'
     RUN_TELEGRAM_BOT: bool = True
+    GAME_COST: int = 650
 
 
 class TestConfig(BaseConfig):
     RUN_TELEGRAM_BOT: bool = False
-    SQLALCHEMY_DATABASE_URI: str = 'sqlite::memory:'
+    # SQLALCHEMY_DATABASE_URI: str = 'sqlite://'
+    SQLALCHEMY_DATABASE_URI: str = 'sqlite:///' + os.path.join(basedir, 'testslocal.db')
 
 
 class ProductionConfig(BaseConfig):
