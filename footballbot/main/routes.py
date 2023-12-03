@@ -54,6 +54,15 @@ def create_fake_data():
     db.session.commit()
 
 
+@bp.cli.command("set_me_as_admin")
+def set_me_as_admin():
+    ID = 188727612
+    secret_string = str(ID) + str(os.environ.get('SECRET_KEY'))
+    secret = hashlib.sha256(secret_string.encode(encoding='utf-8')).hexdigest()
+    p_me = Player(player_id=188727612, telegram_name='rvtsukanov', role='admin', secret=secret)
+    db.session.add_all([p_me])
+    db.session.commit()
+
 @auth.verify_token
 def verify_secret(secret):
     player = Player.verify_token(secret)

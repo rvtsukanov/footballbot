@@ -47,8 +47,8 @@ def create_app(config_name='base'):
     #     FLASK_ENV
     #
 
-    # if strtobool(os.getenv('FLASK_PRODUCTION_SERVER', default=False)) == True:
-    if os.getenv('FLASK_PRODUCTION_SERVER', default=False) == True:
+    if strtobool(os.getenv('FLASK_PRODUCTION_SERVER', default=False)) == True:
+    # if os.getenv('FLASK_PRODUCTION_SERVER', default=False) == True:
         config_name = 'production'
 
     config_class = config[config_name].__call__()

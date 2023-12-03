@@ -22,8 +22,8 @@ def create_bot(nonexisting=False):
         print(f'CFG (IS DEBUG): {config.DEBUG} {not config.DEBUG}')
         bot = telebot.TeleBot(config.API_TOKEN, threaded=False, num_threads=1, parse_mode='html')
 
-        # if strtobool(os.getenv('FLASK_PRODUCTION_SERVER', default=False)) == True:
-        if os.getenv('FLASK_PRODUCTION_SERVER', default=False) == True:
+        if strtobool(os.getenv('FLASK_PRODUCTION_SERVER', default=False)) == True:
+        # if os.getenv('FLASK_PRODUCTION_SERVER', default=False) == True:
             logger.info('Removing old webhook')
             bot.remove_webhook()
             logger.info('Sleep 10 seconds')

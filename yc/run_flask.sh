@@ -19,5 +19,6 @@ openssl req -new -x509 -days 3650 -key webhook_pkey.pem -out webhook_cert.pem \
 export PUBLIC_IP=${PUBLIC_IP} # use source ./<name>.sh to run bash-script in current shell-env
 
 flask main initdb
-flask main create_fake_data
+#flask main create_fake_data
+flask main set_me_as_admin
 flask run -p $FLASK_PORT --host 0.0.0.0 --cert webhook_cert.pem --key webhook_pkey.pem

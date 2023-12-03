@@ -34,7 +34,6 @@ def get_ps(message):
 
         bot.send_message(message.chat.id, '\n'.join([p['player']['telegram_name'] for p in json['player_votes']]))
 
-# @admin_only
 @bot.message_handler(commands=['pollstatus'])
 @admin_only
 def pollstatus(message):
@@ -47,7 +46,7 @@ def pollstatus(message):
                          text=f'Session not found. Create it first.')
 
 
-@bot.message_handler(commands=['register'], chat_types='private')
+@bot.message_handler(commands=['register'])
 def register_player(message):
     with app.app_context():
         player = Player.find_player(player_id=message.from_user.id)
@@ -67,8 +66,8 @@ def register_player(message):
             bot.reply_to(message=message, text=f'Player {player.telegram_name} (id {player.player_id}) already exists.')
 
 
-@admin_only
 @bot.message_handler(commands=['destroy_active_session'])
+@admin_only
 def destroy_active_session(message):
     with app.app_context():
         if not Pollsession.check_if_active_exists():

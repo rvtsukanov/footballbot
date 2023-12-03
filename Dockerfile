@@ -10,6 +10,7 @@ RUN apt-get update && apt-get -y install vim
 
 #ENV DATABASE_URI=sqlite:////var/lib/database2/database.db
 ENV FLASK_DEBUG=False
+ENV FLASK_PRODUCTION_SERVER=True
 VOLUME /var/lib/database2/:/var/lib/database2
 
 EXPOSE 443
