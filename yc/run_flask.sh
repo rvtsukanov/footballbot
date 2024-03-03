@@ -9,7 +9,6 @@ META_SERVER='169.254.169.254'
 PUBLIC_IP=$(curl --connect-timeout 5 http:///$META_SERVER/latest/meta-data/public-ipv4)
 PUBLIC_IP="${PUBLIC_IP:-127.0.0.1}"
 
-
 echo public ip is "${PUBLIC_IP}"
 
 openssl genrsa -out webhook_pkey.pem 2048

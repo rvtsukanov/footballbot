@@ -35,7 +35,7 @@ def get_ps(message):
         bot.send_message(message.chat.id, '\n'.join([p['player']['telegram_name'] for p in json['player_votes']]))
 
 @bot.message_handler(commands=['pollstatus'])
-@admin_only
+# @admin_only
 def pollstatus(message):
     with app.app_context():
         active_session = Pollsession.fetch_active_pollsession()

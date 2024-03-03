@@ -5,7 +5,7 @@ CONTAINER_REGISTRY_URL='cr.yandex'
 REGISTRY_NAME='docker-football'
 
 IMAGE_NICK='football'
-TAG='0.94'
+TAG='0.95'
 
 docker login \
   --username iam \

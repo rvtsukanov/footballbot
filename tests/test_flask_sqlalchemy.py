@@ -196,3 +196,6 @@ def test_pollsession_calculation(app_scenario_5):
 
         with pytest.raises(ValueError):
             active_pollsession.calculate_pollsession(total_amount=1000)
+
+
+

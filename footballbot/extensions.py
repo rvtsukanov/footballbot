@@ -9,21 +9,28 @@ from distutils.util import strtobool
 
 import threading
 from telebot.async_telebot import AsyncTeleBot
+from telebot import custom_filters
 
 logger = logging.getLogger('bot_init')
 
 config_class = BaseConfig if os.getenv('FLASK_DEBUG', default=False) else ProductionConfig
 config = config_class()
 
+from telebot.storage import StateMemoryStorage
+
 def create_bot(nonexisting=False):
     if not nonexisting:
-
+        state_storage = StateMemoryStorage()
         print('Creating bot')
         print(f'CFG (IS DEBUG): {config.DEBUG} {not config.DEBUG}')
-        bot = telebot.TeleBot(config.API_TOKEN, threaded=False, num_threads=1, parse_mode='html')
+        bot = telebot.TeleBot(config.API_TOKEN, threaded=False, num_threads=1, parse_mode='html',
+                              state_storage=state_storage)
 
-        if strtobool(os.getenv('FLASK_PRODUCTION_SERVER', default=False)) == True:
-        # if os.getenv('FLASK_PRODUCTION_SERVER', default=False) == True:
+        bot.add_custom_filter(custom_filters.StateFilter(bot))
+        bot.add_custom_filter(custom_filters.IsDigitFilter())
+
+        # if strtobool(os.getenv('FLASK_PRODUCTION_SERVER', default=False)) == True:
+        if os.getenv('FLASK_PRODUCTION_SERVER', default=False) == True:
             logger.info('Removing old webhook')
             bot.remove_webhook()
             logger.info('Sleep 10 seconds')
