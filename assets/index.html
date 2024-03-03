@@ -1,12 +1,128 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futuristic Players Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        #status {
+            color: #ffffff;
+            font-size: 32px;
+            letter-spacing: 2px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+            transition: text-shadow 0.3s ease-in-out;
+            margin-bottom: 20px;
+        }
+
+        #progress-bar-container {
+            width: 60%;
+            background-color: #444;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 20px;
+            width: 0;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+        }
+
+        #progress-bar.red {
+            background-color: #e74c3c; /* Red color */
+        }
+
+        #alert-text {
+            color: #e74c3c; /* Red color */
+            font-size: 18px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #user-list-container {
+            margin-top: 20px;
+            overflow: hidden;
+            max-height: 150px;
+        }
+
+        #user-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            overflow-y: auto;
+            color: #3498db;
+        }
+
+        #user-list li {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+    </style>
 </head>
 <body>
+
+<div id="status"></div>
+<div id="progress-bar-container">
+    <div id="progress-bar"></div>
+</div>
+<div id="alert-text">Alert: Number of players is full!</div>
+
+<div id="user-list-container">
+    <ul id="user-list"></ul>
+</div>
+
+<script>
+    // Function to update the status, progress bar, and user list
+    function updateStatus(n, k) {
+        const statusElement = document.getElementById("status");
+        const progressBar = document.getElementById("progress-bar");
+        const alertText = document.getElementById("alert-text");
+        const userList = document.getElementById("user-list");
+
+        statusElement.textContent = `${n} players out of ${k}`;
+        const percentage = (n / k) * 100;
+        progressBar.style.width = `${percentage}%`;
+
+        // Add red class to progress bar if n is greater than or equal to 90% of k
+        if (n >= 0.9 * k) {
+            progressBar.classList.add("red");
+        } else {
+            progressBar.classList.remove("red");
+        }
+
+        // Show alert text if n is equal to k
+        alertText.style.display = n === k ? "block" : "none";
+
+        // Update user list with fake usernames
+        userList.innerHTML = "";
+        for (let i = 1; i <= k; i++) {
+            const username = `User${i}`;
+            const listItem = document.createElement("li");
+            listItem.textContent = username;
+            userList.appendChild(listItem);
+        }
+    }
+
+    // Example usage
+    const numberOfPlayers = 10; // Set this to test the alert text and user list
+    const totalPlayers = 10;
+
+    updateStatus(numberOfPlayers, totalPlayers);
+</script>
 
 </body>
 </html>

@@ -17,6 +17,7 @@ config = app.config
 
 if config['RUN_TELEGRAM_BOT']:
     from footballbot.telegrambot import handlers
+    from footballbot.telegrambot import handlers_createpollsession
 
 
 # IDK if really needed
