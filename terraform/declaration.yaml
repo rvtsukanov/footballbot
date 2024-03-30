@@ -1,0 +1,8 @@
+spec:
+  containers:
+#  - image: cr.yandex/crp5td2ej9d9m9e880v2/football:0.95
+  - image: cr.yandex/yc/demo/coi:v1
+    securityContext:
+      privileged: true
+    stdin: true
+    tty: true
