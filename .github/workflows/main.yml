@@ -58,5 +58,5 @@ jobs:
       - name: init
         run: terraform init
 
-      - apply-itself:
+      - name: apply-itself
         run: terraform apply -auto-approve
