@@ -56,10 +56,7 @@ jobs:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
 
       - name: init
-#        uses: actions/github-script@v6
       - run: terraform init
 
       - apply-itself:
-#        uses: actions/github-script@v6
         run: terraform apply -auto-approve
-
