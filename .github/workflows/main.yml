@@ -63,8 +63,7 @@ jobs:
 
       - name: init
         working-directory: ./terraform
-        run: |
-          terraform init
+        run: terraform init
 
       - name: apply-itself
         working-directory: ./terraform
