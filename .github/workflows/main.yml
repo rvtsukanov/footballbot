@@ -12,6 +12,9 @@ on:
 
 env:
   SERVICE_ACCOUNT_ID: ajen1tae40l1m54cklch
+  YC_CLOUD_ID: b1gdu3f7krlqqp5bjaqr
+  YC_FOLDER_ID: b1g6s7qrbeu4ndif5p99
+
 
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -57,7 +60,12 @@ jobs:
 
       - name: init
         working-directory: ./terraform
-        run: terraform init
+        run: |
+          yc config set service-account-key ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+          yc config set cloud-id $YC_CLOUD_ID
+          yc config set folder-id $YC_FOLDER_ID
+          export YC_TOKEN=$(yc iam create-token)
+          terraform init
 
       - name: apply-itself
         working-directory: ./terraform
