@@ -56,7 +56,7 @@ jobs:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
 
       - name: init
-      - run: terraform init
+        run: terraform init
 
       - apply-itself:
         run: terraform apply -auto-approve
