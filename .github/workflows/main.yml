@@ -63,7 +63,9 @@ jobs:
 
       - name: init
         working-directory: ./terraform
-        run: terraform init
+        run: |
+          export TF_VAR_key=${{ secrets.YC_SA_JSON_CREDENTIALS }}
+          terraform init
 
       - name: apply-itself
         working-directory: ./terraform
