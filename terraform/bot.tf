@@ -9,6 +9,7 @@ terraform {
 
 provider "yandex" {
   zone = "ru-central1-a"
+  service_account_key_file = 'key.json'
 }
 
 data "yandex_compute_image" "container-optimized-image" {
