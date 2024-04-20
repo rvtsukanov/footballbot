@@ -58,9 +58,11 @@ jobs:
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
 
+      - name: setup-terraform
+        uses: hashicorp/setup-terraform@v3
+
       - name: init
         working-directory: ./terraform
-        uses: hashicorp/setup-terraform@v3
         run: |
           echo ${{ secrets.YC_SA_JSON_CREDENTIALS }} > key.json
           ls -al
