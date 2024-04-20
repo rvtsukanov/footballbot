@@ -64,8 +64,6 @@ jobs:
       - name: init
         working-directory: ./terraform
         run: |
-#          echo ${{ secrets.YC_SA_JSON_CREDENTIALS }} > key.json
-#          ls -al
           terraform init
 
       - name: apply-itself
