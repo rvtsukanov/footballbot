@@ -60,6 +60,7 @@ jobs:
 
       - name: init
         working-directory: ./terraform
+        uses: hashicorp/setup-terraform@v3
         run: |
           echo ${{ secrets.YC_SA_JSON_CREDENTIALS }} > key.json
           ls -al
