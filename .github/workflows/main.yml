@@ -61,11 +61,7 @@ jobs:
       - name: init
         working-directory: ./terraform
         run: |
-           echo ${{ secrets.YC_SA_JSON_CREDENTIALS }} > key.json
-#          yc config set service-account-key ${{ secrets.YC_SA_JSON_CREDENTIALS }}
-#          yc config set cloud-id $YC_CLOUD_ID
-#          yc config set folder-id $YC_FOLDER_ID
-#          export YC_TOKEN=$(yc iam create-token)
+          echo ${{ secrets.YC_SA_JSON_CREDENTIALS }} > key.json
           terraform init
 
       - name: apply-itself
