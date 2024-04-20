@@ -62,7 +62,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: export_var
-        run: export TF_VAR_key=123
+        run: export TF_VAR_key="${{ secrets.YC_SA_JSON_CREDENTIALS }}"
 
       - name: init
         working-directory: ./terraform
