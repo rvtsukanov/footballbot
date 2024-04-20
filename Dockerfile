@@ -17,7 +17,7 @@ EXPOSE 443
 
 WORKDIR /usr/src/footballbot/footballbot
 
-RUN ["chmod", "+x", "../yc/run_flask.sh"]
+#RUN ["chmod", "+x", "../yc/run_flask.sh"]
 #RUN ["sudo", "mkdir", "/var/lib/database2"]
-CMD ["../yc/run_flask.sh"]
+#CMD ["../yc/run_flask.sh"]
 
