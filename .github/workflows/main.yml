@@ -72,10 +72,14 @@ jobs:
 
       - name: init
         working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
         run: terraform init
 
       - name: Terraform Plan
         working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
         id: plan
         run: terraform plan -no-color
 
