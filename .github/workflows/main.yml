@@ -74,6 +74,10 @@ jobs:
         working-directory: ./terraform
         run: terraform init
 
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+
       - name: apply-itself
         working-directory: ./terraform
         run: terraform apply -auto-approve
