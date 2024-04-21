@@ -9,7 +9,7 @@ terraform {
 
 provider "yandex" {
   zone = "ru-central1-a"
-  service_account_key_file = "${var.key}"
+#  service_account_key_file = "${var.key}"
 }
 
 data "yandex_compute_image" "container-optimized-image" {
@@ -17,7 +17,7 @@ data "yandex_compute_image" "container-optimized-image" {
 }
 
 
-variable "key" { type= string }
+#variable "key" { type= string }
 
 #resource "yandex_compute_disk" "boot-disk-1" {
 #  name     = "boot-disk"
