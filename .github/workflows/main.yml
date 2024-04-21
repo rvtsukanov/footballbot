@@ -74,7 +74,7 @@ jobs:
         working-directory: ./terraform
         env:
           YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
-        run: terraform init
+        run: terraform init -backend-config="access_key=${{ secrets.ACCESS_KEY }}" -backend-config="secret_key=${{ secrets.SECRET_KEY }}"
 
       - name: Terraform Plan
         working-directory: ./terraform
