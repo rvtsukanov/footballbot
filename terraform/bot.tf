@@ -77,7 +77,7 @@ output "external_ip_address_vm_1" {
 }
 
 resource "yandex_dns_recordset" "webset1" {
-  zone_id = dns8ljpdc8tj9l3au8pe
+  zone_id = "dns8ljpdc8tj9l3au8pe"
   name    = "doweplayfootball.ru."
   type    = "A"
   ttl     = 200
@@ -85,7 +85,7 @@ resource "yandex_dns_recordset" "webset1" {
 }
 
 resource "yandex_dns_recordset" "webset2" {
-  zone_id = dns8ljpdc8tj9l3au8pe
+  zone_id = "dns8ljpdc8tj9l3au8pe"
   name    = "www.doweplayfootball.ru."
   type    = "A"
   ttl     = 200
