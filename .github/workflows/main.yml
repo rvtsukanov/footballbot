@@ -4,8 +4,8 @@ name: Push To Yandex Cloud CR
 
 # Controls when the action will run.
 on:
-  push:
-    branches: [ "master" ]
+#  push:
+#    branches: [ "master" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -20,30 +20,30 @@ env:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-#  build:
-#    # The type of runner that the job will run on
-#    runs-on: ubuntu-latest
-#
-#    # Steps represent a sequence of tasks that will be executed as part of the job
-#    steps:
-#      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-#      - uses: actions/checkout@v2
-#
-#      # Runs a single command using the runners shell
-#      - name: Yandex Cloud CR "Login" Action for GitHub Actions
-#        uses: yc-actions/yc-cr-login@v0.1-alpha
-#        with:
-#          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
-#
-#
-#      - name: Build, tag, and push image to Yandex Cloud Container Registry
-#        env:
-#          CR_REGISTRY: crp5td2ej9d9m9e880v2
-#          CR_REPOSITORY: docker-football
-#          IMAGE_TAG: ${{ github.sha }}
-#        run: |
-#          docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG .
-#          docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # Runs a single command using the runners shell
+      - name: Yandex Cloud CR "Login" Action for GitHub Actions
+        uses: yc-actions/yc-cr-login@v0.1-alpha
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+
+      - name: Build, tag, and push image to Yandex Cloud Container Registry
+        env:
+          CR_REGISTRY: crp5td2ej9d9m9e880v2
+          CR_REPOSITORY: docker-football
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG .
+          docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG
           
 
   terraform-apply:
@@ -88,3 +88,42 @@ jobs:
         env:
           YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
         run: terraform apply -auto-approve
+
+
+  terraform-destroy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: IAM Token
+        id: issue-iam-token
+        uses: yc-actions/yc-iam-token@v1
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: setup-terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: export_var
+        run: export YC_TOKEN="${{ steps.issue-iam-token.outputs.token }}"
+
+      - name: init
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+        run: terraform init -backend-config="access_key=${{ secrets.ACCESS_KEY }}" -backend-config="secret_key=${{ secrets.SECRET_KEY }}"
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+        id: plan
+        run: terraform plan -no-color
+
+      - name: destroy-itself
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+        run: terraform destroy -auto-approve
