@@ -85,4 +85,6 @@ jobs:
 
       - name: apply-itself
         working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
         run: terraform apply -auto-approve
