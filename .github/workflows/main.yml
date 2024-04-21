@@ -75,6 +75,7 @@ jobs:
         run: terraform init
 
       - name: Terraform Plan
+        working-directory: ./terraform
         id: plan
         run: terraform plan -no-color
 
