@@ -76,8 +76,17 @@ output "external_ip_address_vm_1" {
   value = yandex_compute_instance.vm-1.network_interface.0.nat_ip_address
 }
 
+resource "yandex_dns_zone" "zone1" {
+  name        = "footballbotzone"
+  description = "..."
+
+  zone             = "doweplayfootball.ru."
+  public           = true
+  private_networks = [yandex_vpc_network.network-1.id]
+}
+
 resource "yandex_dns_recordset" "webset1" {
-  zone_id = "dns8ljpdc8tj9l3au8pe"
+  zone_id = yandex_dns_zone.zone1.id
   name    = "doweplayfootball.ru."
   type    = "A"
   ttl     = 200
@@ -85,7 +94,7 @@ resource "yandex_dns_recordset" "webset1" {
 }
 
 resource "yandex_dns_recordset" "webset2" {
-  zone_id = "dns8ljpdc8tj9l3au8pe"
+  zone_id = yandex_dns_zone.zone1.id
   name    = "www.doweplayfootball.ru."
   type    = "A"
   ttl     = 200
