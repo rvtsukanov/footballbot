@@ -53,8 +53,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Yandex Cloud CR "Login" Action for GitHub Actions
-        uses: yc-actions/yc-cr-login@v0.1-alpha
+#      - name: Yandex Cloud CR "Login" Action for GitHub Actions
+#        uses: yc-actions/yc-cr-login@v0.1-alpha
+#        with:
+#          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: IAM Token
+        id: issue-iam-token
+        uses: yc-actions/yc-iam-token@v1
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
 
@@ -62,7 +68,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: export_var
-        run: export TF_VAR_key="${{ secrets.YC_SA_JSON_CREDENTIALS }}"
+        run: export YC_TOKEN="${{ steps.issue-iam-token.outputs.token }}"
 
       - name: init
         working-directory: ./terraform
