@@ -1,8 +1,20 @@
 #cloud-config
+datasource:
+  Ec2:
+    strict_id: false
 ssh_pwauth: no
 users:
-  - name: yc-user
+  - default
+  - name: rvts
+    groups: sudo
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
-    ssh-authorized-keys:
+    ssh_authorized_keys:
       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKN/mLd3Obuy8w4jNBKcBEwD8ffaisoqwPgim7DIbR4h rvtsukanov@MacBook-Pro-Tsukanov.local"
+bootcmd:
+ - [cloud-init-per, once, mkdir, -m, 0755, -p, /var/lib/database2]
+
+mounts:
+ - ["/dev/vdb1", "/var/lib/database2"]
+
+runcmd: []

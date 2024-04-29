@@ -14,8 +14,8 @@ terraform {
 
     skip_region_validation      = true
     skip_credentials_validation = true
-    skip_requesting_account_id  = true # Необходимая опция Terraform для версии 1.6.1 и старше.
-    skip_s3_checksum            = true # Необходимая опция при описании бэкенда для Terraform версии 1.6.3 и старше.
+    skip_requesting_account_id  = true
+    skip_s3_checksum            = true
 
   }
   required_version = ">= 0.13"
@@ -23,36 +23,30 @@ terraform {
 
 provider "yandex" {
   zone = "ru-central1-a"
-#  service_account_key_file = "${var.key}"
 }
 
 data "yandex_compute_image" "container-optimized-image" {
   family = "container-optimized-image"
 }
 
+locals {
+  storage_id = "fhmpfo86rchd9f43oklc"
+}
 
-#variable "key" { type= string }
-
-#resource "yandex_compute_disk" "boot-disk-1" {
-#  name     = "boot-disk"
-#  type     = "network-hdd"
-#  zone     = "ru-central1-a"
-#  size     = "20"
-##  image_id = "fd87va5cc00gaq2f5qfb"
+#resource "yandex_compute_disk" "empty-disk" {
+#  name       = "empty-disk"
+#  type       = "network-hdd"
+#  size       = 20
 #}
-
 
 resource "yandex_compute_instance" "vm-1" {
   name = "fb"
 
   resources {
     cores  = 2
-    memory = 2
+    memory = 1
+    core_fraction = 5
   }
-
-#  boot_disk {
-#    disk_id = yandex_compute_disk.boot-disk-1.id
-#  }
 
   boot_disk {
     initialize_params {
@@ -60,14 +54,18 @@ resource "yandex_compute_instance" "vm-1" {
     }
   }
 
+  secondary_disk {
+#    disk_id = yandex_compute_disk.empty-disk.id
+    disk_id = local.storage_id
+  }
+
   network_interface {
     subnet_id = yandex_vpc_subnet.subnet-1.id
     nat       = true
+    nat_ip_address = yandex_vpc_address.addr.external_ipv4_address[0].address
   }
 
-#  metadata = {
-#    ssh-keys = "ubuntu:${file("~/.ssh/terrakey.pub")}"
-#  }
+  service_account_id = "ajen1tae40l1m54cklch"
 
   metadata = {
     docker-container-declaration = file("${path.module}/declaration.yaml")
@@ -77,6 +75,18 @@ resource "yandex_compute_instance" "vm-1" {
 
 resource "yandex_vpc_network" "network-1" {
   name = "network1"
+}
+
+resource "yandex_vpc_address" "addr" {
+  name = "dwpf-adress"
+
+  external_ipv4_address {
+    zone_id = "ru-central1-a"
+  }
+}
+
+output "external_ip_address_static" {
+  value = yandex_vpc_address.addr.external_ipv4_address
 }
 
 resource "yandex_vpc_subnet" "subnet-1" {

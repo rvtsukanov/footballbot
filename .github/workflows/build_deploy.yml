@@ -1,0 +1,29 @@
+name: Apply-Delete Terraform
+
+on:
+  push:
+    branches: [ "master" ]
+    tags:
+      - "*"
+  workflow_dispatch:
+
+env:
+  CR_REGISTRY: crp5td2ej9d9m9e880v2
+  CR_REPOSITORY: docker-football
+#  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Yandex Cloud CR "Login" Action for GitHub Actions
+        uses: yc-actions/yc-cr-login@v0.1-alpha
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Build, tag, and push image to Yandex Cloud Container Registry
+        run: |
+          docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:${{github.ref_name}} .
+          docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$${{github.ref_name}}

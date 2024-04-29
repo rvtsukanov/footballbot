@@ -14,38 +14,12 @@ env:
   SERVICE_ACCOUNT_ID: ajen1tae40l1m54cklch
   YC_CLOUD_ID: b1gdu3f7krlqqp5bjaqr
   YC_FOLDER_ID: b1g6s7qrbeu4ndif5p99
+  TERRAFORM_VERSION: 1.8.1
 
 
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-      # Runs a single command using the runners shell
-      - name: Yandex Cloud CR "Login" Action for GitHub Actions
-        uses: yc-actions/yc-cr-login@v0.1-alpha
-        with:
-          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
-
-
-      - name: Build, tag, and push image to Yandex Cloud Container Registry
-        env:
-          CR_REGISTRY: crp5td2ej9d9m9e880v2
-          CR_REPOSITORY: docker-football
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG .
-          docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG
-          
-
   terraform-apply:
     runs-on: ubuntu-latest
 
@@ -66,6 +40,8 @@ jobs:
 
       - name: setup-terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{env.TERRAFORM_VERSION}}
 
       - name: export_var
         run: export YC_TOKEN="${{ steps.issue-iam-token.outputs.token }}"
@@ -105,6 +81,8 @@ jobs:
 
       - name: setup-terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.1"
 
       - name: export_var
         run: export YC_TOKEN="${{ steps.issue-iam-token.outputs.token }}"
