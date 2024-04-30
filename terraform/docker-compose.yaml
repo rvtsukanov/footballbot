@@ -2,7 +2,7 @@ version: '3.7'
 services:
   dwpf-backend:
     container_name: dwpf-backend
-    image: cr.yandex/crp5td2ej9d9m9e880v2/football:0.95
+    image: cr.yandex/crp5td2ej9d9m9e880v2/football:${IMAGE_NAME}
     ports:
       - "443:443"
     restart: always

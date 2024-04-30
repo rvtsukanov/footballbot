@@ -9,6 +9,7 @@ on:
 env:
   CR_REGISTRY: crp5td2ej9d9m9e880v2
   CR_REPOSITORY: football
+  FOLDER_ID: b1g6s7qrbeu4ndif5p99
 #  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
@@ -28,3 +29,16 @@ jobs:
         run: |
           docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG .
           docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG
+      - name: Deploy COI VM
+        id: deploy-coi
+        uses: yc-actions/yc-coi-deploy@v2
+        env:
+          IMAGE_TAG: ${{github.ref_name}}
+          FOLDER_ID: b1g6s7qrbeu4ndif5p99
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+          folder-id: $FOLDER_ID
+          vm-name: fb
+          vm-service-account-id: ajen1tae40l1m54cklch
+          user-data-path: './terraform/cloud_config.yaml'
+          docker-compose-path: './terraform/docker-compose.yaml'
