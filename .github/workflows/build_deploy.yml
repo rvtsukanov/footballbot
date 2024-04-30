@@ -37,7 +37,7 @@ jobs:
           FOLDER_ID: b1g6s7qrbeu4ndif5p99
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
-          folder-id: $FOLDER_ID
+          folder-id: b1g6s7qrbeu4ndif5p99
           vm-name: fb
           vm-subnet-id: e9buba7dc076ghih76nf
           vm-service-account-id: ajen1tae40l1m54cklch
