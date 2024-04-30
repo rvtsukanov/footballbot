@@ -2,9 +2,8 @@ name: Apply-Delete Terraform
 
 on:
   push:
-    branches: [ "master" ]
     tags:
-      - "*"
+      - '*'
   workflow_dispatch:
 
 env:

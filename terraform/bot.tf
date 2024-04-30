@@ -68,7 +68,8 @@ resource "yandex_compute_instance" "vm-1" {
   service_account_id = "ajen1tae40l1m54cklch"
 
   metadata = {
-    docker-container-declaration = file("${path.module}/declaration.yaml")
+#    docker-container-declaration = file("${path.module}/declaration.yaml")
+    docker-compose = file("${path.module}/docker-compose.yaml")
     user-data = file("${path.module}/cloud_config.yaml")
   }
 }
@@ -125,6 +126,11 @@ resource "yandex_dns_recordset" "webset2" {
   data    = [yandex_compute_instance.vm-1.network_interface.0.nat_ip_address]
 }
 
+#resource "yandex_logging_group" "botlogs" {
+#  name             = "botlogs"
+#  folder_id        = "b1g6s7qrbeu4ndif5p99"
+#  retention_period = "5h"
+#}
 
 
 #output "external_ip" {
