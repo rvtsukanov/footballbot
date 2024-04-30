@@ -10,6 +10,8 @@ services:
       - fluentbit
     volumes:
       - /var/lib/database2:/var/lib/database2
+    entrypoint:
+      -
     logging:
       driver: fluentd
       options:

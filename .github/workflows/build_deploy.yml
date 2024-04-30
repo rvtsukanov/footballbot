@@ -8,7 +8,7 @@ on:
 
 env:
   CR_REGISTRY: crp5td2ej9d9m9e880v2
-  CR_REPOSITORY: docker-football
+  CR_REPOSITORY: football
 #  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
