@@ -39,6 +39,7 @@ jobs:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
           folder-id: $FOLDER_ID
           vm-name: fb
+          vm-subnet-id: e9buba7dc076ghih76nf
           vm-service-account-id: ajen1tae40l1m54cklch
           user-data-path: './terraform/cloud_config.yaml'
           docker-compose-path: './terraform/docker-compose.yaml'
