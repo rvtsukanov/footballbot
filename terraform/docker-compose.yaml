@@ -2,16 +2,16 @@ version: '3.7'
 services:
   dwpf-backend:
     container_name: dwpf-backend
-    image: cr.yandex/crp5td2ej9d9m9e880v2/football:${IMAGE_NAME}
+    image: cr.yandex/crp5td2ej9d9m9e880v2/football:v0.96.6
     ports:
       - "443:443"
     restart: always
+#    restart: no
     depends_on:
       - fluentbit
     volumes:
       - /var/lib/database2:/var/lib/database2
-    entrypoint:
-      -
+    entrypoint: ../yc/run_flask.sh
     logging:
       driver: fluentd
       options:
