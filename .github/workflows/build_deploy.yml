@@ -10,7 +10,7 @@ env:
   CR_REGISTRY: crp5td2ej9d9m9e880v2
   CR_REPOSITORY: football
   FOLDER_ID: b1g6s7qrbeu4ndif5p99
-#  IMAGE_TAG: ${{ github.sha }}
+  IMAGE_TAG: ${{github.ref_name}}
 
 jobs:
   build:
@@ -29,17 +29,106 @@ jobs:
         run: |
           docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG .
           docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG
-      - name: Deploy COI VM
-        id: deploy-coi
-        uses: yc-actions/yc-coi-deploy@v2
-        env:
-          IMAGE_TAG: ${{github.ref_name}}
-          FOLDER_ID: b1g6s7qrbeu4ndif5p99
+
+#      - name: Deploy COI VM
+#        id: deploy-coi
+#        uses: yc-actions/yc-coi-deploy@v2
+#        env:
+#          IMAGE_TAG: ${{github.ref_name}}
+#          FOLDER_ID: b1g6s7qrbeu4ndif5p99
+#        with:
+#          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+#          folder-id: b1g6s7qrbeu4ndif5p99
+#          vm-name: fb
+#          vm-subnet-id: e9buba7dc076ghih76nf
+#          vm-service-account-id: ajen1tae40l1m54cklch
+#          user-data-path: './terraform/cloud_config.yaml'
+#          docker-compose-path: './terraform/docker-compose.yaml'
+
+  redeploy-destroy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: IAM Token
+        id: issue-iam-token
+        uses: yc-actions/yc-iam-token@v1
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
-          folder-id: b1g6s7qrbeu4ndif5p99
-          vm-name: fb
-          vm-subnet-id: e9buba7dc076ghih76nf
-          vm-service-account-id: ajen1tae40l1m54cklch
-          user-data-path: './terraform/cloud_config.yaml'
-          docker-compose-path: './terraform/docker-compose.yaml'
+
+      - name: setup-terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.1"
+
+      - name: export_var
+        run: export YC_TOKEN="${{ steps.issue-iam-token.outputs.token }}"
+
+      - name: init
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+        run: terraform init -backend-config="access_key=${{ secrets.ACCESS_KEY }}" -backend-config="secret_key=${{ secrets.SECRET_KEY }}"
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+        id: plan
+        run: terraform plan -no-color
+
+      - name: destroy-itself
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+        run: terraform destroy -auto-approve
+
+  redeploy-apply:
+    needs: redeploy-destroy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Yandex Cloud CR "Login" Action for GitHub Actions
+        uses: yc-actions/yc-cr-login@v0.1-alpha
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: IAM Token
+        id: issue-iam-token
+        uses: yc-actions/yc-iam-token@v1
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: setup-terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{env.TERRAFORM_VERSION}}
+
+      - name: export_var
+        run: export YC_TOKEN="${{ steps.issue-iam-token.outputs.token }}"
+
+      - name: init
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+        run: terraform init -backend-config="access_key=${{ secrets.ACCESS_KEY }}" -backend-config="secret_key=${{ secrets.SECRET_KEY }}"
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+        id: plan
+        run: terraform plan -no-color
+
+      - name: apply-itself
+        working-directory: ./terraform
+        env:
+          YC_TOKEN: ${{ steps.issue-iam-token.outputs.token }}
+          IMAGE_TAG: ${{github.ref_name}}
+        run: terraform apply -auto-approve
