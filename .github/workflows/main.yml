@@ -46,6 +46,9 @@ jobs:
       - name: export_var
         run: export YC_TOKEN="${{ steps.issue-iam-token.outputs.token }}"
 
+      - name: List Dir
+        run: ls -al
+
       - name: init
         working-directory: ./terraform
         env:
