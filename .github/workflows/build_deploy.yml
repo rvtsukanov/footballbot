@@ -106,6 +106,9 @@ jobs:
         with:
           terraform_version: ${{env.TERRAFORM_VERSION}}
 
+      - name: List Dir
+        run: ls -al
+
       - name: Mustache
         uses: edgardleal/mustache-template-action@v1.0.0
         env:
