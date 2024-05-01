@@ -11,6 +11,9 @@ env:
   CR_REPOSITORY: football
   FOLDER_ID: b1g6s7qrbeu4ndif5p99
   IMAGE_TAG: ${{github.ref_name}}
+  SERVICE_ACCOUNT_ID: ajen1tae40l1m54cklch
+  YC_CLOUD_ID: b1gdu3f7krlqqp5bjaqr
+  YC_FOLDER_ID: b1g6s7qrbeu4ndif5p99
 
 jobs:
   build:
