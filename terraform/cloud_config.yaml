@@ -40,6 +40,8 @@ write_files:
     path: /etc/fluentbit/parsers.conf
   - content: |
       IMAGE_TAG=${IMAGE_TAG}
+      IMAGE_TAG="12345"
+      path: /etc/environment
 datasource:
   Ec2:
     strict_id: false
