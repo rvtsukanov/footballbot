@@ -2,11 +2,11 @@ version: '3.7'
 services:
   dwpf-backend:
     environment:
-      - IMAGE_TAG
+      - IMAGE_TAG=${IMAGE_TAG}
     container_name: dwpf-backend
 #    image: cr.yandex/crp5td2ej9d9m9e880v2/football:v0.96.7
-#    image: cr.yandex/crp5td2ej9d9m9e880v2/football:${IMAGE_TAG}
-    image: cr.yandex/crp5td2ej9d9m9e880v2/football:{{env.IMAGE_TAG}}
+    image: cr.yandex/crp5td2ej9d9m9e880v2/football:${IMAGE_TAG}
+#    image: cr.yandex/crp5td2ej9d9m9e880v2/football:{{env.IMAGE_TAG}}
     ports:
       - "443:443"
     restart: always

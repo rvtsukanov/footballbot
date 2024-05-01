@@ -38,6 +38,8 @@ write_files:
           Regex  ^\[req_id=(?<req_id>[0-9a-fA-F\-]+)\] \[(?<severity>.*)\] (?<code>\d+) (?<text>.*)$
           Types  code:integer
     path: /etc/fluentbit/parsers.conf
+  - content: |
+      IMAGE_TAG=${IMAGE_TAG}
 datasource:
   Ec2:
     strict_id: false
