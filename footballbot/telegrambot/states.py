@@ -5,10 +5,7 @@ class StartPollsessionStates(StatesGroup):
     num_teams = State()
     num_players = State()
 
+
 class ModifyPollsessionStates(StatesGroup):
-    pass
-
-
-# from telebot.callback_data import CallbackData
-
-#
+    modify_teams = State()
+    modify_players = State()

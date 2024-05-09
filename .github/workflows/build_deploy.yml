@@ -55,13 +55,26 @@ jobs:
       - name: List Dir
         run: ls -al
 
-      - name: Mustache
-        uses: edgardleal/mustache-template-action@v1.0.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install mustache
+        run: npm i -g mustache
+
+#      - name: Mustache
+#        uses: edgardleal/mustache-template-action@v1.0.0
+#        env:
+#          IMAGE_TAG: ${{github.ref_name}}
+#        with:
+#          input: ./terraform/docker-compose.yaml
+#          output: ./terraform/docker-compose.yaml
+
+      - name: mustache
         env:
           IMAGE_TAG: ${{github.ref_name}}
-        with:
-          input: ./terraform/docker-compose.yaml
-          output: ./terraform/docker-compose.yaml
 
       - name: export_var
         run: export YC_TOKEN="${{ steps.issue-iam-token.outputs.token }}"

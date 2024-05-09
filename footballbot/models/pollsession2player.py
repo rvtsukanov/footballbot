@@ -11,7 +11,7 @@ class Pollsession2Player(db.Model, SerializerMixin):
     insert_dt = db.Column('insert_dt', db.DateTime, default=datetime.datetime.utcnow)
 
     player = db.relationship('Player')
-    player_id = db.Column(db.Integer, db.ForeignKey('player.player_id'))
+    player_id = db.Column(db.Integer, db.ForeignKey('player.player_id'), nullable=False)
 
     def __le__(self, other):
         return self.insert_dt <= other.insert_dt

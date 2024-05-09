@@ -105,39 +105,7 @@ def create_new_pollsession(message):
             bot.set_state(message.from_user.id, StartPollsessionStates.num_teams, chat_id=message.chat.id)
 
 
-@bot.message_handler(commands=['decrease_players_num'])
-def decrease_players_num(message):
-    if Pollsession.check_if_active_exists():
-        active_pollsession = Pollsession.fetch_active_pollsession()
-        # active_pollsession
 
-
-
-
-@bot.callback_query_handler(func=lambda call: "Голосование" in call.message.text)
-def callback_query(call):
-    player_id = call.from_user.id
-    with app.app_context():
-        pollsession = Pollsession.find_pollsession_by_message(call.message.id)
-        player = Player.find_player(player_id=player_id)
-        if "+" in call.data:
-            pollsession.add_player(player)
-            db.session.commit()
-            bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'],
-                                  message_id=pollsession.pinned_message_id,
-                                  reply_markup=make_plus_minus_markup())
-        elif "-" in call.data:
-            pollsession.delete_player(player)
-            db.session.commit()
-            bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'],
-                                  message_id=pollsession.pinned_message_id, reply_markup=make_plus_minus_markup())
-
-        elif 'Calculate' in call.data:
-            player = Player.find_player(player_id=player_id)
-            if player.get_role() == 'admin':
-                pollsession.calculate_pollsession(config['GAME_COST'])
-                bot.edit_message_text(text=pollsession.render(), chat_id=config['GROUP_ID'],
-                                      message_id=pollsession.pinned_message_id, reply_markup=make_plus_minus_markup(activate=False))
 
 
 # @bot.callback_query_handler(func=lambda call: 'Choose num_teams for' in call.message.text)

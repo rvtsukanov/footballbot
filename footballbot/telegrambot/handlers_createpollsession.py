@@ -19,8 +19,6 @@ def callback_create_pollsession_num_teams(call):
     Revokes by: /create_pollsession's markup button pressure
     Do: loads info from pressed markup button, reset state to StartPollsessionStates.num_players
     '''
-    logging.info(f'Data: {call}')
-    logging.info(f'Data: {call.message}')
 
     with bot.retrieve_data(call.from_user.id) as data:
         data['num_teams'] = call.data.split(':')[1]
@@ -30,8 +28,6 @@ def callback_create_pollsession_num_teams(call):
                  text=f'{num_players} teams were chosen. Now, choose number_players via inline keyboard or type manually.',
                  reply_markup=make_num_players_markup(num_players))
     bot.set_state(call.from_user.id, StartPollsessionStates.num_players, chat_id=call.message.chat.id)
-    # bot.reply_to(message=call.message,
-    #              text=f'state is: {bot.get_state(call.from_user.id)}')
 
 
 @bot.message_handler(state=StartPollsessionStates.num_teams, is_digit=True)
@@ -70,14 +66,15 @@ def create_pollsession(teams_number, num_players):
         bot.pin_chat_message(sended_msg.chat.id, sended_msg.message_id)
 
         pollsession.pinned_message_id = sended_msg.message_id
+        dt = pollsession.creation_dt
+        psid = pollsession.pollsession_id
         db.session.commit()
 
-        return created_pollsession, sended_msg
+        return {'dt': dt, 'psid': psid}, sended_msg
 
 
 @bot.callback_query_handler(func=None, state=StartPollsessionStates.num_players, config=num_players_factory.filter())
 def callback_create_pollsession_num_players(call):
-    print('!!!!!')
     with app.app_context():
         with bot.retrieve_data(call.from_user.id) as data:
             data['num_players'] = call.data.split(':')[1]
@@ -85,18 +82,20 @@ def callback_create_pollsession_num_players(call):
             teams_number = data['num_teams']
 
     created_pollsession, msg = create_pollsession(teams_number, num_players)
+    dt, psid = created_pollsession['dt'], created_pollsession['psid']
 
     bot.reply_to(message=call.message,
-                 text=f'Session with <b>id={created_pollsession.pollsession_id}</b> created at {created_pollsession.creation_dt}\n' +
-                      f'Number of teams is {created_pollsession.teams_number}\nTotal number of players is {created_pollsession.max_players}')
-
+                 text=f'Session with <b>id={psid}</b> created at {dt}\n')
 
 @bot.message_handler(state=StartPollsessionStates.num_players, is_digit=True)
 def callback_create_pollsession_num_players_text(message):
     with bot.retrieve_data(message.from_user.id) as data:
         teams_number = data['num_teams']
-        data['num_players'] = message.text
+        num_players = message.text
 
+    created_pollsession, msg = create_pollsession(teams_number, num_players)
+    dt, psid = created_pollsession['dt'], created_pollsession['psid']
 
-
-
+    with app.app_context():
+        bot.reply_to(message=message,
+                     text=f'Session with <b>id={psid}</b> created at {dt}\n')

@@ -121,6 +121,7 @@ class Pollsession(db.Model, SerializerMixin):
 
     def get_players_telegram_names(self):
         votes = self.player_votes.all()
+        print(f'votes are: {votes}')
         if votes:
             return [vote.player.telegram_name for vote in votes]
         else:

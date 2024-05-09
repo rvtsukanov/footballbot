@@ -12,5 +12,7 @@ class ProductsCallbackFilter(AdvancedCustomFilter):
 
 num_teams_factory = CallbackData('num_teams', prefix='num_teams')
 num_players_factory = CallbackData('num_players', prefix='num_players')
+plus_minus_factory = CallbackData('plus_minus', prefix='plus_minus')
+modify_players_factory = CallbackData('modify_players', prefix='modify_players')
 
 bot.add_custom_filter(ProductsCallbackFilter())
