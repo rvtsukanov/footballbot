@@ -19,23 +19,26 @@ def callback_create_pollsession_num_teams(call):
     Revokes by: /create_pollsession's markup button pressure
     Do: loads info from pressed markup button, reset state to StartPollsessionStates.num_players
     '''
-    logging.info(f'Data: {call.data}')
+    logging.info(f'Data: {call}')
+    logging.info(f'Data: {call.message}')
 
     with bot.retrieve_data(call.from_user.id) as data:
         data['num_teams'] = call.data.split(':')[1]
         num_players = data['num_teams']
 
-    bot.set_state(call.message.from_user.id, StartPollsessionStates.num_players)
     bot.reply_to(message=call.message,
-                 text=f'{call.data} teams were chosen. Now, choose number_players via inline keyboard or type manually.',
+                 text=f'{num_players} teams were chosen. Now, choose number_players via inline keyboard or type manually.',
                  reply_markup=make_num_players_markup(num_players))
+    bot.set_state(call.from_user.id, StartPollsessionStates.num_players, chat_id=call.message.chat.id)
+    # bot.reply_to(message=call.message,
+    #              text=f'state is: {bot.get_state(call.from_user.id)}')
 
 
 @bot.message_handler(state=StartPollsessionStates.num_teams, is_digit=True)
 def callback_create_pollsession_num_teams_text(message):
     '''
     | CREATE-POLLSESSION PIPELINE: STEP 1 (TEXT) |
-    Revokes by: /create_pollsession's markup button pressure
+    Revokes by: /create_pollsession's text
     Do: loads info from pressed markup button, reset state to StartPollsessionStates.num_players
     '''
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
@@ -51,6 +54,8 @@ def callback_create_pollsession_num_teams_text(message):
 def create_pollsession(teams_number, num_players):
     with app.app_context():
         max_players_per_team = int(num_players) / int(teams_number)
+
+        logging.info(f'setup pollsession: {max_players_per_team, int(num_players), int(teams_number)}')
 
         pollsession = Pollsession(teams_number=teams_number,
                                   max_players_per_team=max_players_per_team)
@@ -70,16 +75,16 @@ def create_pollsession(teams_number, num_players):
         return created_pollsession, sended_msg
 
 
-@bot.callback_query_handler(func=None, config=num_players_factory.filter())
+@bot.callback_query_handler(func=None, state=StartPollsessionStates.num_players, config=num_players_factory.filter())
 def callback_create_pollsession_num_players(call):
-
+    print('!!!!!')
     with app.app_context():
         with bot.retrieve_data(call.from_user.id) as data:
             data['num_players'] = call.data.split(':')[1]
             num_players = data['num_players']
             teams_number = data['num_teams']
 
-    created_pollsession, msg = create_pollsession(num_players, teams_number)
+    created_pollsession, msg = create_pollsession(teams_number, num_players)
 
     bot.reply_to(message=call.message,
                  text=f'Session with <b>id={created_pollsession.pollsession_id}</b> created at {created_pollsession.creation_dt}\n' +

@@ -15,6 +15,8 @@ def make_num_players_markup(num_players: int):
                                                     callback_data=num_players_factory.new(num))
                  for num in rng_players_per_team_map.get(int(num_players), [])])
 
+    return markup
+
 
 def make_plus_minus_markup(activate=True):
     markup = telebot.types.InlineKeyboardMarkup()

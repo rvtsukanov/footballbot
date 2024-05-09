@@ -8,8 +8,9 @@ from pydantic import SecretStr, AnyUrl
 
 class BaseConfig(BaseSettings):
     SECRET_KEY: str = os.environ.get('SECRET_KEY', default='1' * 32)
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get('DATABASE_URI')\
-        or 'sqlite:///' + os.path.join(basedir, 'database.db')  # TODO: not overriding via test conf
+    # SQLALCHEMY_DATABASE_URI: str = os.environ.get('DATABASE_URI')\
+    #     or 'sqlite:///' + os.path.join(basedir, 'database.db')  # TODO: not overriding via test conf
+    SQLALCHEMY_DATABASE_URI: str = 'sqlite:///:memory:'
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     MATCHTIME: datetime.time = datetime.time(11, 0)
     MATCHDAY: int = 5  # for Sat
